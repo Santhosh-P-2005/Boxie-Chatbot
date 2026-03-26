@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Type__c</fullName>
+    <label>Type</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Question Based</fullName>
+                <default>false</default>
+                <label>Question Based</label>
+            </value>
+            <value>
+                <fullName>Template Based</fullName>
+                <default>false</default>
+                <label>Template Based</label>
+            </value>
+            <value>
+                <fullName>Button</fullName>
+                <default>false</default>
+                <label>Button</label>
+            </value>
+            <value>
+                <fullName>Option</fullName>
+                <default>false</default>
+                <label>Option</label>
+            </value>
+            <value>
+                <fullName>Separate Button</fullName>
+                <default>false</default>
+                <label>Separate Button</label>
+            </value>
+            <value>
+                <fullName>Separate Option</fullName>
+                <default>false</default>
+                <label>Separate Option</label>
+            </value>
+            <value>
+                <fullName>Separate Text</fullName>
+                <default>false</default>
+                <label>Separate Text</label>
+            </value>
+            <value>
+                <fullName>Option Based</fullName>
+                <default>false</default>
+                <label>Option Based</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

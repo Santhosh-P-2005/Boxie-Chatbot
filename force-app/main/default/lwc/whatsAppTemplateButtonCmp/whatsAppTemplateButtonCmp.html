@@ -1,0 +1,57 @@
+<template>
+	<div if:true={isCustomButtonType}>
+			<div style="background: #FDFDFD; border-radius: 8px; border: 1px #EFEFEF solid;padding:20px;padding-top:14px;">
+					<div style="display:flex;">
+							<lightning-input style="width: 97%;" value={buttonData.text} type="text" label="Button Text" data-name="text" onchange={handleTextChange} onblur={handleOnBlur}></lightning-input>
+							<lightning-icon id="closeBtn" icon-name="utility:close" size="x-small" style="padding-left: 23px; cursor:pointer;" onclick={handleCustomCloseButton}></lightning-icon>
+					</div>
+			</div>
+	</div>
+	<div if:true={isPhoneButtonType}>
+		<div class="call-input-btn-container" style="background: #FDFDFD; border-radius: 8px; border: 1px #EFEFEF solid;padding:20px;padding-top:14px;">
+			<div class="input-container" style="display:flex;">
+				<lightning-combobox class="call-input-btn type-action"	style="width:30%;padding-right: 15px;"	name="actionType"	label="Type of Action" value="Call Phone Number" placeholder="Select Progress" options={actionTypes} onchange={handleButtonType}></lightning-combobox>
+				<lightning-input class="call-input-btn" style="width:97%;padding-right: 15px;" value={buttonData.text} type="text" label="Button Text" data-name="text" onchange={handleTextChange} onblur={handleOnBlur} ></lightning-input>
+				<!-- <div style="display: flex;"> -->
+					<lightning-helptext content="Add your Phone number with your country code" class="help-text-1"></lightning-helptext>
+					<lightning-input class="call-input-btn" style="width:97%;" value={buttonData.phone_number} type="text" label="Phone Number" data-name="phone_number" onchange={handleTextChange} onblur={handleOnBlur}></lightning-input>
+					<lightning-helptext content="Add your Phone number with your country code" class="help-text-2"></lightning-helptext>
+				<!-- </div> -->
+				<!-- <lightning-icon icon-name="utility:close" size="x-small" style="padding-left: 23px;"></lightning-icon> -->
+			</div>
+				<lightning-icon icon-name="utility:close" size="x-small" style="padding-left: 23px; cursor:pointer;" onclick={handleCustomCloseButton}></lightning-icon>
+
+		</div>
+	</div>
+	<div if:true={isUrlButtonType}>
+		<div class="call-input-btn-container" style="background: #FDFDFD; border-radius: 8px; border: 1px #EFEFEF solid;padding:20px;padding-top:14px;">
+			<div class="input-container" style="display:flex;">
+				<lightning-combobox class="call-input-btn type-action" 	style="width:30%;padding-right: 15px;"	name="actionType" label="Type of Action" value="Visit website"	placeholder="Select Progress" options={actionTypes}	onchange={handleButtonType}></lightning-combobox>
+				<lightning-input class="call-input-btn" style="width:97%;padding-right: 15px;" value={buttonData.text} type="text" label="Button Text" data-name="text" onchange={handleTextChange} onblur={handleOnBlur}></lightning-input>
+				<lightning-input class="call-input-btn" style="width:97%;" value={buttonData.url} type="text" label="URL" data-name="url" onchange={handleTextChange} onblur={handleOnBlur}></lightning-input>
+				<!-- <lightning-icon icon-name="utility:close" size="x-small" style="padding-left: 23px;"></lightning-icon> -->
+			</div>
+				<lightning-icon icon-name="utility:close" size="x-small" style="padding-left: 23px; cursor:pointer;" onclick={handleCustomCloseButton}></lightning-icon>
+
+		</div>
+	</div>
+	<!-- <div if:true={isCopyCodeButtonType}>
+		<div class="call-input-btn-container " style="background: #FDFDFD; border-radius: 8px; border: 1px #EFEFEF solid;padding:20px;padding-top:14px;">
+			<div class="input-container" style="display:flex;">
+				<lightning-combobox class="call-input-btn type-action"
+														style="width:30%;padding-right: 15px;"
+														name="actionType"
+														label="Type of Action"
+														value="Copy offer code"
+														placeholder="Select Progress"
+														options={actionTypes}
+														></lightning-combobox>
+				<lightning-input class="call-input-btn" style="width:97%;padding-right: 15px;" value={buttonData.text} type="text" label="Button Text" data-name="text" onchange={handleTextChange} onblur={handleOnBlur}></lightning-input>
+				<lightning-input class="call-input-btn" style="width:97%;" value={buttonData.example} type="text" label="Code" data-name="example" onchange={handleTextChange} onblur={handleOnBlur}></lightning-input>
+				 <lightning-icon icon-name="utility:close" size="x-small" style="padding-left: 23px;"></lightning-icon> 
+			</div>
+				<lightning-icon icon-name="utility:close" size="x-small" style="padding-left: 23px;" onclick={handleCustomCloseButton}></lightning-icon>
+
+		</div>
+	</div> -->
+</template>

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Messenger Feature Documentation</title>
+  <style>
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .page-break { page-break-before: always; }
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.5;
+      color: #333;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 20mm;
+      font-size: 11pt;
+    }
+    h1 { font-size: 18pt; margin-bottom: 0.25em; }
+    h2 { font-size: 14pt; margin-top: 1.2em; margin-bottom: 0.4em; border-bottom: 1px solid #ccc; padding-bottom: 0.2em; }
+    h3 { font-size: 12pt; margin-top: 0.8em; margin-bottom: 0.3em; }
+    h4 { font-size: 11pt; margin-top: 0.6em; margin-bottom: 0.25em; }
+    p { margin: 0.4em 0; }
+    ul { margin: 0.4em 0; padding-left: 1.5em; }
+    li { margin: 0.2em 0; }
+    table { border-collapse: collapse; width: 100%; margin: 0.6em 0; font-size: 10pt; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    th { background: #f5f5f5; font-weight: 600; }
+    hr { border: none; border-top: 1px solid #ccc; margin: 1em 0; }
+    .header { margin-bottom: 1em; font-size: 10pt; color: #555; }
+    .toc { margin: 1em 0; }
+    .contents-title { font-weight: 600; margin-bottom: 0.3em; }
+    strong { font-weight: 600; }
+    .end-note { margin-top: 2em; font-style: italic; color: #555; }
+  </style>
+</head>
+<body>
+
+<h1>Smart Messenger Feature Documentation</h1>
+<div class="header">
+  <strong>Winfomi Technologies LLP</strong><br>
+  452/1, Sanarpalayam, Mylambadi, Erode, Tamil Nadu, India - 638 314<br>
+  win@winfomi.com | https://www.winfomi.com/ | +91 97893 37418
+</div>
+<hr>
+
+<h2>Contents</h2>
+<table>
+  <tr><th>Section</th><th>Page</th></tr>
+  <tr><td>Overview</td><td>3</td></tr>
+  <tr><td>Configuration</td><td>4</td></tr>
+  <tr><td>Chat Application (Smart Messenger)</td><td>6</td></tr>
+  <tr><td>Template Creation</td><td>11</td></tr>
+  <tr><td>Incoming Message Window</td><td>18</td></tr>
+</table>
+<hr>
+
+<h2>Overview</h2>
+<p>Smart Messenger is a powerful, enterprise-ready messaging solution built natively on the Salesforce Platform. It seamlessly integrates <strong>WhatsApp</strong> (via Meta Business API or Twilio) and <strong>SMS</strong> (via Twilio) communication into Salesforce, enabling businesses to engage with their customers in real time — right from Leads, Contacts, Accounts, or any standard/custom object.</p>
+<p>Designed with productivity, compliance, and user experience in mind, Smart Messenger combines modern messaging tools with Salesforce data, optional AI-powered features, and automation to drive faster and smarter conversations.</p>
+
+<h3>Key Highlights</h3>
+<ul>
+  <li><strong>Two-Way Messaging:</strong> Send and receive messages directly within Salesforce — supports <strong>SMS</strong>, <strong>WhatsApp (Meta)</strong>, and <strong>WhatsApp (Twilio)</strong> channels.</li>
+  <li><strong>Real-Time Notifications:</strong> Get live alerts via platform events through the utility bar for every inbound message.</li>
+  <li><strong>Einstein AI Assistance (UI ready):</strong> Reframe, AI Summary, and AI Suggestion options are available in the chat UI; backend integration is configurable per deployment.</li>
+  <li><strong>Media Support:</strong> Share images, PDFs, videos, and more with rich preview support.</li>
+  <li><strong>Admin Configuration:</strong> Connect <strong>Meta (WhatsApp Business)</strong> or <strong>Twilio (SMS and Twilio WhatsApp)</strong> using a secure, permission-based configuration screen.</li>
+  <li><strong>Template Creation:</strong> Build and manage WhatsApp templates manually for both Meta and Twilio WhatsApp; template creation UI supports header, body, footer, buttons, and object/field mapping.</li>
+  <li><strong>Conversation Chatbot:</strong> Configurable dialogue-based chatbot flows for both Meta WhatsApp and Twilio WhatsApp (Dialogue and Option Dialog records).</li>
+  <li><strong>Workflow Integration:</strong> Embed the chat experience into your lead-to-case lifecycle, marketing flows, or service automation.</li>
+  <li><strong>Responsiveness:</strong> Mobile-friendly UI with support for Salesforce Console Apps, Utility Bar, and Experience Cloud pages.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>1. Configuration</h2>
+<h3>Overview</h3>
+<p>The Configuration module allows Salesforce administrators to securely set up messaging service provider details for channels: <strong>SMS (Twilio)</strong>, <strong>WhatsApp (Meta/Facebook)</strong>, and <strong>WhatsApp (Twilio)</strong>. This forms the foundation for enabling outbound and inbound messaging functionality in the app.</p>
+
+<h3>Key Capabilities</h3>
+<ul>
+  <li>Configure and manage connection settings for:
+    <ul>
+      <li><strong>Twilio (SMS)</strong></li>
+      <li><strong>Meta WhatsApp Business API</strong></li>
+      <li><strong>Twilio WhatsApp</strong> (Twilio Content API and Messages API)</li>
+    </ul>
+  </li>
+  <li>Separate configuration blocks for each channel.</li>
+  <li>Role-based access: Only users with the <strong>SmartMsg_Admin</strong> permission set can modify settings.</li>
+  <li>Encrypted handling of sensitive fields (e.g., Auth Tokens, App Secret).</li>
+  <li>Channel-based dynamic field rendering (e.g., Twilio fields for SMS, Meta fields for WhatsApp, Twilio WhatsApp fields for Twilio WhatsApp).</li>
+  <li>Toggle active/inactive status for each provider.</li>
+  <li>Only one WhatsApp provider (Meta or Twilio WhatsApp) can be active at a time for WhatsApp messaging.</li>
+  <li>Real-time validation and user feedback via toast notifications.</li>
+</ul>
+
+<h3>Configurable Fields</h3>
+<table>
+  <tr><th>Channel</th><th>Field Name</th><th>Description</th></tr>
+  <tr><td><strong>SMS (Twilio)</strong></td><td>Account SID</td><td>Twilio account identifier</td></tr>
+  <tr><td></td><td>Auth Token</td><td>Twilio API key</td></tr>
+  <tr><td></td><td>Messaging Service SID</td><td>Twilio messaging service ID</td></tr>
+  <tr><td></td><td>Twilio Phone Number</td><td>Sender number</td></tr>
+  <tr><td></td><td>Media Base URL</td><td>Base URL for media hosting</td></tr>
+  <tr><td></td><td>Status Callback URL</td><td>URL to receive message status updates</td></tr>
+  <tr><td></td><td>Environment ID</td><td>Twilio project environment</td></tr>
+  <tr><td></td><td>Service ID</td><td>Twilio Service ID</td></tr>
+  <tr><td><strong>WhatsApp (Meta)</strong></td><td>Application ID</td><td>Facebook App ID</td></tr>
+  <tr><td></td><td>App Secret Key</td><td>Facebook App secret</td></tr>
+  <tr><td></td><td>Auth Token</td><td>Access token</td></tr>
+  <tr><td></td><td>Phone Number ID</td><td>WhatsApp sender number ID</td></tr>
+  <tr><td></td><td>WhatsApp Business ID</td><td>Linked WhatsApp Business Account</td></tr>
+  <tr><td></td><td>Active</td><td>Enable/Disable the channel</td></tr>
+  <tr><td><strong>WhatsApp (Twilio)</strong></td><td>Account SID</td><td>Twilio account identifier</td></tr>
+  <tr><td></td><td>Auth Token</td><td>Twilio API key</td></tr>
+  <tr><td></td><td>Messaging Service SID</td><td>Twilio messaging service ID</td></tr>
+  <tr><td></td><td>Twilio Phone Number</td><td>WhatsApp sender number (e.g. +1234567890)</td></tr>
+  <tr><td></td><td>Status Callback URL</td><td>URL for status and incoming message webhooks</td></tr>
+  <tr><td></td><td>From Phone Numbers</td><td>Optional additional from numbers for Twilio WhatsApp</td></tr>
+  <tr><td></td><td>Active</td><td>Enable/Disable the channel</td></tr>
+</table>
+
+<h3>Access Control</h3>
+<p>Only users assigned the <strong>SmartMsg_Admin</strong> permission set can access or modify the settings. Unauthorized users will see an error message indicating lack of permission.</p>
+
+<h3>User Experience</h3>
+<ul>
+  <li>Settings are managed via a Lightning Web Component (<strong>providerSettingsConfig</strong>) with a modal-based form for each provider.</li>
+  <li>Records are fetched and cached using Apex with <code>@AuraEnabled(cacheable=true)</code> annotation.</li>
+  <li>Real-time field-level validation with visual feedback ensures accurate configuration.</li>
+  <li>Configurations are stored in Custom Settings:
+    <ul>
+      <li><strong>SmartMsg__Meta_Configuration__c</strong> (WhatsApp Meta)</li>
+      <li><strong>SmartMsg__TwilioConfiguration__c</strong> (SMS)</li>
+      <li><strong>SmartMsg__Twilio_Whatsapp__c</strong> (Twilio WhatsApp)</li>
+    </ul>
+  </li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>2. Chat Application (Smart Messenger)</h2>
+<p>The Chat Application allows Salesforce users to send and receive real-time messages via <strong>WhatsApp (Meta or Twilio)</strong> and <strong>SMS</strong>, directly from any standard or custom record like Leads, Contacts, or Accounts. It supports multimedia messages, templates, optional AI capabilities, conversation chatbot, and more.</p>
+
+<h3>Permission-Controlled Access</h3>
+<p>Only users with the <strong>SmartMsg_Admin</strong> permission set can access the chat component. If a user lacks this permission, they will be shown a friendly message indicating insufficient access.</p>
+
+<h3>Select Communication Channel (SMS / WhatsApp)</h3>
+<ul>
+  <li><strong>SMS</strong>, <strong>WhatsApp (Meta)</strong>, or <strong>WhatsApp (Twilio)</strong> can be selected via the channel dropdown at the footer, depending on which providers are configured and active.</li>
+  <li>Once selected, all subsequent messages are sent through the chosen channel.</li>
+  <li>WhatsApp messages support rich capabilities like media, templates, and interactive buttons/lists.</li>
+</ul>
+
+<h3>Message Composition &amp; Sending</h3>
+<ul>
+  <li>The user types a message in the input box at the bottom.</li>
+  <li>A phone field selector dropdown allows choosing the recipient number field from the record (e.g., MobilePhone, Phone).</li>
+  <li>A Send icon triggers message delivery.</li>
+  <li>Character counter is displayed for SMS (e.g. 500 characters max); WhatsApp has no strict character limit.</li>
+</ul>
+
+<h3>Message Scheduling</h3>
+<ul>
+  <li>Users can schedule a message for future delivery (clock icon).</li>
+  <li>Choose date and time; once confirmed, the message is saved with a "Scheduled" tag.</li>
+  <li>Scheduled messages are styled with a clock icon and time indicator.</li>
+  <li>Scheduling is supported for both SMS and WhatsApp via backend Apex (e.g. <strong>UpdateScheduledWhatsAppMessages</strong>, <strong>RunEveryMinSchedule</strong>).</li>
+</ul>
+
+<h3>Attach Media or Documents</h3>
+<ul>
+  <li>Users can attach a file or a public URL to WhatsApp messages (Attach icon).</li>
+  <li>Toggle between upload file (.png, .pdf, .mp4, .mp3, etc.) or enter public media URL.</li>
+  <li>Previews are rendered inline in the chat for media files.</li>
+  <li>File chips appear below the message box before sending and can be removed.</li>
+</ul>
+
+<h3>Request Location</h3>
+<ul>
+  <li>For WhatsApp, a <strong>Request Location</strong> button is available.</li>
+  <li>Sends a predefined message asking the customer to share their location.</li>
+  <li>When the customer shares location, the message is stored with latitude, longitude, address, and name; the chat displays a map thumbnail and link to view on Google Maps.</li>
+  <li>Useful in logistics, service calls, or delivery workflows.</li>
+</ul>
+
+<h3>Message Templates</h3>
+<ul>
+  <li>Template icon launches the template picker.</li>
+  <li>Search templates by name; view template name, message body, and channel in a table layout.</li>
+  <li>Click a template to auto-fill it into the message box.</li>
+  <li>Especially useful for WhatsApp's 24-hour session rule.</li>
+</ul>
+
+<h3>24-Hour Re-Engagement Handling (WhatsApp)</h3>
+<p>If the customer has not messaged in the last 24 hours, WhatsApp may restrict freeform messages. The app can detect this and prompt the user to send a pre-approved WhatsApp template instead, ensuring compliance with WhatsApp policy.</p>
+
+<h3>Pin / Star Important Messages</h3>
+<ul>
+  <li>Hover over a message and use the three-dots menu to: <strong>Pin</strong> a message — shown in a banner at the top; <strong>Star</strong> a message — marked with a star icon.</li>
+  <li>Starred and pinned messages help highlight key parts of a conversation. A "Show Starred" filter is available.</li>
+</ul>
+
+<h3>Search Messages</h3>
+<p>More Options &gt; Search Messages enables keyword search. Filters and highlights matching messages in the conversation.</p>
+
+<h3>Download Chat Transcript</h3>
+<p>Available under More Options. Downloads the full conversation history in a readable format for compliance, audits, or hand-offs.</p>
+
+<h3>Inline Media Rendering</h3>
+<p>Messages with media are rendered with previews: Images: thumbnail with click-to-zoom. PDF / MP4 / MP3: appropriate file icons and links. Audio: playable via file link. Fallback icons when the file is not previewable.</p>
+
+<h3>Einstein AI Assistant (UI Ready)</h3>
+<p>The Chat Application includes a toggleable <strong>Einstein</strong> icon at the bottom with three options in the menu:</p>
+<ul>
+  <li><strong>Reframe:</strong> Rewrite the drafted message in a clearer or more professional tone (backend integration configurable).</li>
+  <li><strong>AI Summary:</strong> Generate a summary of the conversation (backend integration configurable).</li>
+  <li><strong>AI Suggestion:</strong> Recommend next best responses based on the conversation (backend integration configurable).</li>
+</ul>
+<p>The UI and menu are implemented; the Apex methods (e.g. FlexTemplate) for Reframe, Summary, and Suggestion can be integrated as needed for your org.</p>
+
+<h3>Conversation Chatbot</h3>
+<ul>
+  <li><strong>Meta WhatsApp</strong> and <strong>Twilio WhatsApp</strong> support configurable chatbot flows.</li>
+  <li>Flows are driven by <strong>SmartMsg__Dialogue__c</strong> (message content and type) and <strong>SmartMsg__Option_Dialog__c</strong> (next step based on user choice).</li>
+  <li>First message or session with one inbound is treated as "Hi"; the bot responds with welcome and language/options. Subsequent choices (e.g. New Customer, Existing Customer, Moving Boxes) drive the dialogue tree.</li>
+  <li>Supports buttons, list pickers, ordered question sequences (e.g. reservation forms), and "Is there anything else?" with Yes/No to loop or end.</li>
+</ul>
+
+<h3>Typing Indicator (WhatsApp)</h3>
+<p>When supported by the channel, a typing signal can be sent to the customer while the user composes a message to simulate human-like interaction.</p>
+
+<h3>Real-Time Updates via Platform Events</h3>
+<p>The chat listens to <strong>SmartMsg__Incoming_Message__e</strong> platform event. New incoming messages appear instantly without refresh. Keeps agents updated in real time for faster replies.</p>
+
+<h3>Delivery &amp; Status Tracking</h3>
+<p>Messages show Sent, Delivered, Read indicators where provided by the provider. Failed messages are marked with a warning icon and tooltip showing failure reason (e.g. invalid number, 24-hour window expired).</p>
+
+<h3>Mobile Responsive Design</h3>
+<p>The component is mobile-optimized with collapsible menus, icon-based actions, and responsive modals. Layouts for file upload, search, and conversation history are tailored for small screens.</p>
+
+<div class="page-break"></div>
+
+<h2>3. Template Creation</h2>
+<p>The Template Creation module allows users to create, preview, and manage WhatsApp message templates for <strong>Meta</strong> and <strong>Twilio WhatsApp</strong>, and to manage template usage for SMS. Templates can be reused across conversations and are required for WhatsApp re-engagement outside the 24-hour window.</p>
+
+<h3>WhatsApp Templates (Meta and Twilio)</h3>
+<ul>
+  <li><strong>Meta WhatsApp:</strong> Templates are created and submitted via the Meta Graph API. The app supports manual creation with header, body, footer, buttons, and example values; templates are stored in <strong>SmartMsg__Message_Template__c</strong> and synced with Meta (e.g. template ID, status).</li>
+  <li><strong>Twilio WhatsApp:</strong> Templates are created using the Twilio Content API. Users can create Content templates and save them to <strong>SmartMsg__Message_Template__c</strong>; status sync (e.g. Pending/Approved) is supported via <strong>TwilioWhatsAppTemplateStatusBatch</strong> and scheduler.</li>
+</ul>
+
+<h3>Manual Template Creation for WhatsApp (Meta)</h3>
+<ul>
+  <li><strong>Template Name:</strong> Unique identifier; auto-uppercase formatting can be applied.</li>
+  <li><strong>Language:</strong> WhatsApp language code (e.g. en_US).</li>
+  <li><strong>Header Type:</strong> TEXT, or IMAGE, VIDEO, DOCUMENT for media headers.</li>
+  <li><strong>Header Text:</strong> For TEXT header type.</li>
+  <li><strong>Body:</strong> Main message content with variables {{1}}, {{2}}, etc.</li>
+  <li><strong>Footer Text:</strong> Optional sign-off or disclaimer.</li>
+  <li><strong>Buttons:</strong> Quick Reply (e.g. Yes/No), URL, or Phone Number.</li>
+  <li><strong>Example:</strong> Example values for body and header (e.g. for media) for template approval.</li>
+  <li>Real-time validation, auto cleanup on cancel, and live preview panel.</li>
+</ul>
+
+<h3>Manual Template Creation for Twilio WhatsApp</h3>
+<p>Twilio WhatsApp templates are created using the <strong>Twilio Content API</strong>. The app builds the content payload in the UI, creates the content via the API, submits it for <strong>Meta/WhatsApp approval</strong> (required for WhatsApp delivery), and saves the template to <strong>SmartMsg__Message_Template__c</strong> with channel <strong>Twilio WhatsApp</strong>. Template status (e.g. Pending, Approved, Rejected) is synced with Twilio/Meta via <strong>TwilioWhatsAppTemplateStatusBatch</strong> and <strong>TwilioWhatsAppTemplateStatusScheduler</strong>.</p>
+
+<h4>Template creation fields</h4>
+<table>
+  <tr><th>Field</th><th>Description</th></tr>
+  <tr><td><strong>Template Name</strong></td><td>Unique identifier; spaces are replaced with underscores and the value is lowercased to form the Twilio-friendly name used in the Content API and for Meta approval.</td></tr>
+  <tr><td><strong>Object</strong></td><td>Salesforce object used for merge fields (e.g. Lead, Contact). Optional; used when the body contains dynamic placeholders.</td></tr>
+  <tr><td><strong>Body Text</strong></td><td>Main message content. Supports <strong>Salesforce merge fields</strong> in the form <code>{!ObjectName.FieldName}</code> (e.g. <code>{!Contact.Name}</code>). When the template is created, each merge field is converted to Twilio variables <code>{{1}}</code>, <code>{{2}}</code>, etc.; the original body with <code>{!...}</code> is stored in <strong>Body__c</strong> so that sending from a record page can replace placeholders with that record's values. If left blank, the body is sent as <code>{{1}}</code>.</td></tr>
+  <tr><td><strong>Type</strong></td><td>Determines the kind of interactive content. See <strong>Response types</strong> below.</td></tr>
+  <tr><td><strong>Options</strong></td><td>Used when Type is Quick Reply or List Picker. Each option can have a title and, for List Picker (with description), an optional description. Stored in <strong>Button__c</strong> as JSON.</td></tr>
+</table>
+
+<h4>Response types (Type)</h4>
+<table>
+  <tr><th>Type</th><th>UI label</th><th>Description</th><th>Limits</th></tr>
+  <tr><td><strong>Text only</strong></td><td>Text only</td><td>Plain text body only (with optional merge fields). No buttons or list.</td><td>—</td></tr>
+  <tr><td><strong>Quick Reply</strong></td><td>Quick Reply (buttons)</td><td>Body plus up to 3 quick-reply buttons (twilio/quick-reply).</td><td>Maximum 3 buttons.</td></tr>
+  <tr><td><strong>List Picker (no description)</strong></td><td>List Picker (no description)</td><td>Body plus a list of options; each option has a title only (twilio/list-picker).</td><td>Maximum 10 options.</td></tr>
+  <tr><td><strong>List Picker (with description)</strong></td><td>List Picker (with description)</td><td>Body plus a list of options; each option has a title and an optional description (twilio/list-picker with item and description).</td><td>Maximum 10 options.</td></tr>
+</table>
+<ul>
+  <li>For <strong>Quick Reply</strong> and <strong>List Picker</strong>, at least one option is required.</li>
+  <li><strong>Quick Reply</strong> allows at most <strong>3</strong> buttons.</li>
+  <li><strong>List Picker</strong> allows at most <strong>10</strong> options.</li>
+</ul>
+
+<h4>Stored on Message_Template__c (Twilio WhatsApp)</h4>
+<table>
+  <tr><th>Field</th><th>Usage</th></tr>
+  <tr><td><strong>Template_Name__c</strong></td><td>Display name entered by the user.</td></tr>
+  <tr><td><strong>Channel__c</strong></td><td>Set to <strong>Twilio WhatsApp</strong>.</td></tr>
+  <tr><td><strong>Object_Name__c</strong></td><td>Object selected for merge fields.</td></tr>
+  <tr><td><strong>Body__c</strong></td><td>Body text as entered (with <code>{!...}</code> merge fields).</td></tr>
+  <tr><td><strong>Template_API_Name__c</strong></td><td>Friendly name: Template Name with spaces → underscores, lowercased.</td></tr>
+  <tr><td><strong>WhatsApp_Template_ID__c</strong></td><td>Twilio Content SID returned from the Content API.</td></tr>
+  <tr><td><strong>Header__c</strong></td><td>Not used for Twilio; set to null.</td></tr>
+  <tr><td><strong>Footer__c</strong></td><td>Not used for Twilio; set to null.</td></tr>
+  <tr><td><strong>Button__c</strong></td><td>JSON array of options (e.g. text and description for list picker with description).</td></tr>
+  <tr><td><strong>List_Picker_With_Description__c</strong></td><td>True when Type is List Picker (with description).</td></tr>
+  <tr><td><strong>Status__c</strong></td><td>Pending (submitted for approval), Approved, Rejected, or Failed (e.g. approval submission failed).</td></tr>
+  <tr><td><strong>Error_Response__c</strong></td><td>Truncated error message when approval submission or creation fails.</td></tr>
+</table>
+
+<h4>Creation and approval flow</h4>
+<ol>
+  <li>User fills Template Name, Object (optional), Body Text, Type, and Options (when applicable).</li>
+  <li>App builds the Twilio Content API JSON payload (body with <code>{{1}}</code>, <code>{{2}}</code> where merge fields were used; variable descriptions for Meta approval).</li>
+  <li><strong>POST</strong> to Twilio Content API creates the content; response <strong>Content SID</strong> is stored in <strong>WhatsApp_Template_ID__c</strong>.</li>
+  <li>App <strong>submits the content for Meta/WhatsApp approval</strong> (e.g. ApprovalRequests/whatsapp with template name and category such as MARKETING).</li>
+  <li><strong>Message_Template__c</strong> is inserted with <strong>Status__c</strong> = Pending (if submission succeeded) or Failed (with <strong>Error_Response__c</strong> if not).</li>
+  <li><strong>TwilioWhatsAppTemplateStatusBatch</strong> / <strong>TwilioWhatsAppTemplateStatusScheduler</strong> sync status from Twilio/Meta (e.g. Approved/Rejected) back to <strong>Status__c</strong>.</li>
+</ol>
+<p>Real-time validation (required name, option count, button/option limits) and user feedback via toasts. Object and field pickers (same as Meta) support <strong>Insert merge field</strong> in the body for dynamic content when sending from a record.</p>
+
+<h3>AI-Powered Template Suggestions (UI Ready)</h3>
+<p>The template creation UI includes an option for <strong>Using AI</strong> to generate template content. Backend integration (e.g. FlexTemplate.generateTemplateJSON) can be wired so that a user provides intent or description and receives suggested header, body with variables, footer, and button recommendations with fields auto-populated. Multi-language support can be extended in future releases.</p>
+
+<h3>Template Editing &amp; Management</h3>
+<ul>
+  <li><strong>Edit Existing Templates:</strong> Templates can be retrieved from Salesforce and edited. WhatsApp (Meta) templates can typically be edited only within a 24-hour window after creation. The form is auto-filled with saved values. Twilio WhatsApp templates are created in the UI (create flow builds Content API payload, submits for Meta approval, and saves to <strong>Message_Template__c</strong>); editing of already-approved Twilio content may be subject to provider limits.</li>
+  <li><strong>Save &amp; Cancel:</strong> Save persists the template to <strong>SmartMsg__Message_Template__c</strong> and, for Meta, submits to the provider API; for Twilio WhatsApp, create flow calls the Twilio Content API and submits for Meta/WhatsApp approval. Cancel resets the form and closes the modal.</li>
+  <li><strong>SMS:</strong> Template records for SMS (body with merge fields, channel SMS) are used by the chat for sending; creation/editing can be done via the same or a simplified flow depending on configuration.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>4. Incoming Message Window (Utility Bar)</h2>
+<p>The Incoming Message Window is a real-time notification panel integrated into the Salesforce Utility Bar. It allows users to view, manage, and respond to inbound <strong>WhatsApp (Meta and Twilio)</strong> and <strong>SMS</strong> messages without leaving their current workspace.</p>
+
+<h3>Real-Time Platform Events Listener</h3>
+<ul>
+  <li>The component listens to <strong>SmartMsg__Incoming_Message__e</strong> Platform Event.</li>
+  <li>When a new inbound message is received it: Plays a notification sound (e.g. Web Audio API); Blinks the Utility Bar icon to draw attention; Fetches and displays the message without refresh.</li>
+</ul>
+
+<h3>Record Navigation</h3>
+<p>Clicking the sender's name or message header navigates to the associated Contact, Lead, or Account using NavigationMixin, based on SOSL/lookup by incoming phone number.</p>
+
+<h3>Tabs: All &amp; Unread</h3>
+<ul>
+  <li><strong>ALL:</strong> All inbound messages grouped by sender, sorted by recent activity.</li>
+  <li><strong>UNREAD:</strong> Only unread message threads for easy triage.</li>
+</ul>
+
+<h3>Search Messages</h3>
+<p>Search bar to filter by sender name or message body. Live filtering across tabs with pagination preserved.</p>
+
+<h3>Message Preview &amp; Media Rendering</h3>
+<p>Messages grouped by sender with latest message content. Rich preview for images (inline thumbnails), audio (embedded player), video (inline player), and files (e.g. PDF, DOC) with download link and file icon.</p>
+
+<h3>Channel Identification</h3>
+<p>Each message shows an icon for its channel: WhatsApp (Meta or Twilio) or SMS.</p>
+
+<h3>Message Actions (per thread)</h3>
+<ul>
+  <li><strong>Reply:</strong> Opens the full Chat Application prefilled with the record and number.</li>
+  <li><strong>Mark as Read:</strong> Clears unread badge, stops blinking, updates unread count (e.g. <strong>markAsRead</strong> Apex).</li>
+  <li><strong>Delete:</strong> Permanently deletes the message with confirmation; server-side deletion via Apex.</li>
+</ul>
+
+<h3>Pagination Support</h3>
+<p>Previous and Next controls for the filtered and grouped message list.</p>
+
+<h3>Refresh Capability</h3>
+<p>Refresh button reloads all messages with animated loading feedback.</p>
+
+<h3>Utility Bar Integration</h3>
+<p>Utility item label can show count, e.g. <strong>Incoming Messages (3)</strong>. Blinking icon indicates new message; stops after Mark as Read or user interaction (Reply/Delete).</p>
+
+<h3>Quick Access to Full Chat</h3>
+<p>Reply or clicking a sender opens the Chat Component inside the utility view with full functionality (templates, media, etc.). A Back button returns to the message list.</p>
+
+<h3>Last Sent User Awareness</h3>
+<p><strong>getLastSentUser</strong> Apex method checks if the current user sent the last outbound message to the sender. Utility Bar highlight can stay active when the same user is expected to respond.</p>
+
+<h3>Mark All as Read (Per Sender)</h3>
+<p>When a thread is marked as read, all messages from that sender are updated via Apex (<strong>markAsRead</strong>).</p>
+
+<h3>Permission and Security</h3>
+<p>Data operations use <strong>WITH SECURITY_ENFORCED</strong> for FLS and CRUD compliance. Apex classes handle errors and surface feedback via toasts on the UI.</p>
+
+<hr>
+<p class="end-note">End of Smart Messenger Feature Documentation</p>
+
+</body>
+</html>

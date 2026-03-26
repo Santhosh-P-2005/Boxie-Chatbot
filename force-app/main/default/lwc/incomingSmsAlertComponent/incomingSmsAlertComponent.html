@@ -1,0 +1,149 @@
+<template>
+    <div class="notification-panel">
+        <!-- Header -->
+        <div class="notification-header">
+            <div class="header-content">
+                <!-- <template if:false={isChatVisible}>
+                    <div class="header-left">
+                        <lightning-icon icon-name="standard:messaging_conversation"
+                                      size="small"
+                                      class="header-icon">
+                        </lightning-icon>
+                        <span class="header-title">Incoming SMS({unreadCount})</span>
+                    </div>
+                </template> -->
+                <template if:true={isChatVisible}>
+                    <div class="header-left">
+                        <lightning-button-icon icon-name="utility:back" onclick={handleBack} title="Back">
+                        </lightning-button-icon>
+                        <span class="header-title" onclick={handleHeaderClick} data-recordid={chatRecordId}
+                            data-recordtype={chatObjectApiName}>{chatTitle}</span>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Conditionally Rendered UI -->
+        <template if:false={isChatVisible}>
+            <!-- Message List UI -->
+            <!-- Tabs -->
+            <div class="tab-section">
+                <button class={allTabClass} data-tab="ALL" onclick={handleTabChange}>ALL</button>
+                <button class={unreadTabClass} data-tab="UNREAD" onclick={handleTabChange}>UNREAD</button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="search-section">
+                <div class="search-container">
+                    <lightning-input type="search" placeholder="Search..." onchange={handleSearch}
+                        variant="label-hidden" style="flex:1">
+                    </lightning-input>
+                    <lightning-button-icon icon-name="utility:refresh" variant="bare" size="Medium"
+                        onclick={handleRefresh} class="refresh-button">
+                    </lightning-button-icon>
+                </div>
+            </div>
+
+            <!-- Spinner  -->
+            <lightning-spinner alternative-text="Loading" size="small" variant="brand"
+                if:true={isSpinner}></lightning-spinner>
+
+            <!-- Messages List -->
+            <div class="messages-container">
+                <template if:false={messages}>
+                    <h1 class="No-message">No Incoming Messages to Show 😶</h1>
+                </template>
+                <template for:each={filteredMessages} for:item="message">
+                    <div key={message.Id} class="message-tile">
+                        <div class="message-header">
+                            <div class="sender-info" onclick={handleRecordClick} data-recordid={message.recordId}
+                                data-recordtype={message.recordType}>
+                                <div class="sender-name">{message.senderName}</div>
+                                <template if:true={message.unreadCount}>
+                                    <div class="unread-badge">{message.unreadCount}</div>
+                                </template>
+                            </div>
+                            <div class="message-time">{message.formattedDate}</div>
+                        </div>
+                        <template if:true={message.hasMedia}>
+                            <div class="media-preview">
+                                <template if:true={message.isImage}>
+                                    <img src={message.mediaUrl} alt="Media Image" class="media-image" />
+                                </template>
+                                <template if:true={message.isAudio}>
+                                    <audio controls class="media-audio">
+                                        <source src={message.mediaUrl} type="audio/mpeg" />
+                                        Your browser does not support the audio tag.
+                                    </audio>
+                                </template>
+                                <template if:true={message.isVideo}>
+                                    <video controls class="media-video">
+                                        <source src={message.mediaUrl} type="video/mp4" />
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </template>
+                                <template if:true={message.isFile}>
+                                    <a href={message.mediaUrl} target="_blank" class="media-download">
+                                        <lightning-icon icon-name="utility:download" size="x-small"></lightning-icon>
+                                        Download File
+                                    </a>
+                                </template>
+                            </div>
+                        </template>
+                        <div class="Message-Icon">
+                            <div class="message-content">
+                                <lightning-formatted-rich-text
+                                    value={message.SmartMsg__Message_Body__c}></lightning-formatted-rich-text>
+                            </div>
+                            <div class="meta-icon">
+                                <template if:true={message.isWhatsApp}>
+                                    <img src={whatsappIconUrl} class="whatsApp-icon-meta" alt="WhatsApp Icon" />
+                                </template>
+                                <template if:true={message.isSMS}>
+                                    <lightning-icon icon-name="standard:sms" class="sms-icon" size="small">
+                                    </lightning-icon>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="message-actions">
+                            <lightning-button-icon icon-name="utility:reply" onclick={handleReply}
+                                data-number={message.SmartMsg__To_Number__c} data-recordid={message.recordId}
+                                data-recordtype={message.recordType} data-sendername={message.senderName} title="Reply">
+                            </lightning-button-icon>
+                            <lightning-button-icon icon-name="utility:check" onclick={handleMarkAsRead}
+                                data-id={message.Id}>
+                            </lightning-button-icon>
+                            <lightning-button-icon icon-name="utility:delete" onclick={handleDelete}
+                                data-id={message.Id}>
+                            </lightning-button-icon>
+                        </div>
+
+                    </div>
+                </template>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div class="pagination-controls slds-align_absolute-center">
+                <lightning-button label="Previous" icon-name="utility:chevronleft" onclick={handlePrevious}
+                    disabled={isPreviousDisabled} class="slds-m-right_x-small">
+                </lightning-button>
+
+                <span class="slds-badge slds-m-horizontal_medium">
+                    Page {currentPage} of {totalPages}
+                </span>
+
+                <lightning-button label="Next" icon-name="utility:chevronright" icon-position="right"
+                    onclick={handleNext} disabled={isNextDisabled}>
+                </lightning-button>
+            </div>
+        </template>
+        <template if:true={isChatVisible}>
+            <!-- Chat Component UI -->
+            <div class="utility-bar-chat-container">
+                <c-chat-component record-id={chatRecordId} object-api-name={chatObjectApiName}
+                    phone-number={chatPhoneNumber} hide-utility-bar-elements="true" chat-class="utility-bar">
+                </c-chat-component>
+            </div>
+        </template>
+    </div>
+</template>

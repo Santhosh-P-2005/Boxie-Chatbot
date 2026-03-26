@@ -1,0 +1,270 @@
+.notification-panel {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.slds-utility-panel__body {
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+}
+
+.notification-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.header-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #16325c;
+    cursor: pointer;
+}
+
+.header-title:hover {
+     color: #0070d2;
+}
+
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.action-icon {
+    cursor: pointer;
+}
+
+.tab-section {
+    display: flex;
+    padding: 5px;
+    gap: 1px;
+    background: #f3f3f3;
+}
+
+.tab-section button {
+    flex: 1;
+    padding: 3px;
+    border: none;
+    background: transparent;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.tab-section button.slds-button_brand {
+    background: #0070d2;
+    color: white;
+    border-radius: 4px;
+}
+
+.search-section {
+    padding: 8px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.search-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.messages-container {
+    flex: 1;
+    overflow-y: overlay;
+    padding: 8px;
+    max-height: 275px;
+}
+
+
+.message-tile {
+    background: white;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.sender-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.sender-name {
+    font-weight: 600;
+    color: #16325c;
+}
+
+.unread-badge {
+    background: #FF0F0F;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.message-time {
+    color: #706e6b;
+    font-size: 12px;
+}
+
+.whatsApp-icon-meta{ 
+        height: 20px; 
+        width: 20px; 
+        padding: 3px; 
+        margin-top: 2.5px; 
+} 
+
+.Message-Icon{
+    display: flex;
+    gap: 10px;
+}
+
+.message-content {
+    color: #3e3e3c;
+    font-size: 13px;
+    margin-bottom: 8px;
+    line-height: 1.4;
+    width: 85%;
+}
+
+.meta-icon{
+    float: right;
+    align-items: flex-end;
+}
+
+.sms-icon { 
+        color: rgba(0, 161, 224, 1); 
+        --slds-c-icon-color-foreground: rgba(0, 161, 224, 1); 
+        --slds-c-icon-color-background: transparent; 
+        cursor: pointer; 
+} 
+
+.message-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #f3f3f3;
+}
+
+.media-preview {
+    margin-top: 8px;
+    width: 50%;
+
+}
+
+.media-image {
+    max-width: 50%;
+    height: auto;
+    border-radius: 6px;
+}
+
+.media-audio {
+    width: 100%;
+    margin-top: 4px;
+}
+
+.media-video{
+     width: 100%;
+     height: auto;
+}
+
+.media-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    color: #0070d2;
+    text-decoration: none;
+    margin-top: 4px;
+}
+
+
+.pagination-controls {
+   border-radius: 10px;
+    position: sticky;
+    /* margin-top: 0%; */
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 0.5rem;
+    z-index: 2;
+}
+
+.full-utility-modal .slds-modal__container {
+  max-width: 100%; /* Take up full width */
+  width: 100%;
+  height: 100%; /* Take up full height */
+  max-height: unset; /* Override any max-height */
+}
+
+.full-utility-modal .slds-modal__header {
+    padding: var(--lwc-spacingMedium,1rem);
+}
+
+.full-utility-modal .slds-modal__content {
+    height: calc(100% - 50px); /* Adjust based on header height */
+    overflow: auto;
+    padding: var(--lwc-spacingMedium,1rem);
+}
+
+.utility-bar-chat-container .custom-card {
+    height: 26rem;
+}
+
+.utility-bar-chat-container .chat-Area {
+    max-height: 17rem;
+}
+
+.utility-bar-chat-container .icon-input {
+    bottom: 0;
+    margin-top: auto;
+    position: relative;
+    width: 98%;
+}
+
+.utility-bar-chat-container .chat-input {
+    height: 2.5rem;
+}
+
+.refresh-button {
+    --slds-c-button-color-border: transparent;
+}
+
+.refresh-button.rotate {
+    animation: rotate 0.5s linear;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}

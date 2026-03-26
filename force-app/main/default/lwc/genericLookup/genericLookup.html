@@ -1,0 +1,97 @@
+<template>
+    <div class="slds-form-element">
+        <div class="slds-combobox_container">
+            <div class={comboboxClass}>
+                <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_left-right" role="none">
+
+                    <!-- Selected Record Pill -->
+                    <template if:true={selectedRecord}>
+                        <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_left-right" style="width: 100%;">
+                            <lightning-icon
+                                icon-name={selectedRecord.iconName}
+                                size="x-small"
+                                class="slds-input__icon slds-input__icon_left">
+                            </lightning-icon>
+
+                            <!-- Styled like input -->
+                            <div class="slds-input slds-pill slds-pill_link slds-size_full header-search" style="padding-left: 2rem; padding-right: 2rem; display: flex; align-items: center;width:160px;height: 40px;border: 1px solid #000;">
+                                <span class="slds-pill__label" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" onclick={clearSelection}>
+                                    {selectedRecord.Name}
+                                </span>
+                                <button class="slds-button slds-button_icon slds-pill__remove" onclick={clearSelection} style="margin-left: auto;">
+                                    <lightning-icon icon-name="utility:close" size="x-small"></lightning-icon>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+
+                    <!-- Search Input -->
+                    <template if:false={selectedRecord}>
+                        <lightning-icon icon-name="utility:search" size="x-small" class="search-icon"></lightning-icon>
+                        <input
+                            type="text"
+                            class="slds-input slds-combobox__input"
+                            placeholder={placeholder}
+                            aria-controls="dropdown-id"
+                            value={searchTerm}
+                            onfocus={handleFocus}
+                            onclick={handleFocus}
+                            oninput={handleSearchInput}
+                            style="cursor: pointer"
+                            icon-name="utility:search"
+                        />
+                    </template>
+
+                </div>
+
+                <!-- Dropdown Menu -->
+                <template if:true={showDropdown}>
+                    <div id="dropdown-id" class="slds-dropdown slds-dropdown_length-5" style="width:100%;" role="menu">
+                        <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+
+                            <!-- Initial Suggestions -->
+                            <template if:true={showInitialSuggestions}>
+                                <template for:each={initialSuggestions} for:item="record">
+                                    <li key={record.Id} class="slds-listbox__item" role="presentation" onclick={handleSelect} data-id={record.Id}>
+                                        <div class="slds-media slds-media_center slds-listbox__option">
+                                            <span class="slds-media__figure">
+                                                <lightning-icon icon-name={record.iconName} size="small"></lightning-icon>
+                                            </span>
+                                            <span class="slds-media__body">
+                                                <span class="slds-truncate" title={record.Name}>{record.Name}</span>
+                                                <template if:true={record.Title}>
+                                                    <span class="slds-truncate" title={record.Title}>{record.Title}</span>
+                                                </template>
+                                            </span>
+                                        </div>
+                                    </li>
+                                </template>
+                            </template>
+
+                            <!-- Search Results -->
+                            <template if:true={showSearchResults}>
+                                <template for:each={searchResults} for:item="record">
+                                    <li key={record.Id} class="slds-listbox__item" role="presentation" onclick={handleSelect} data-id={record.Id}>
+                                        <div class="slds-media slds-media_center slds-listbox__option">
+                                            <span class="slds-media__figure">
+                                                <lightning-icon icon-name={record.iconName} size="small"></lightning-icon>
+                                            </span>
+                                            <span class="slds-media__body">
+                                                <span class="slds-truncate" title={record.Name}>{record.Name}</span>
+                                                <template if:true={record.Title}>
+                                                    <span class="slds-truncate" title={record.Title}>{record.Title}</span>
+                                                </template>
+                                            </span>
+                                        </div>
+                                    </li>
+                                </template>
+                            </template>
+
+                        </ul>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</template>

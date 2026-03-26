@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Service_Provider_Name__c</fullName>
+    <description>The Service Provider will be Twilio for SMS or Meta for WhatsApp</description>
+    <externalId>false</externalId>
+    <inlineHelpText>The Service Provider will be Twilio for SMS or Meta for WhatsApp</inlineHelpText>
+    <label>Service Provider Name</label>
+    <length>255</length>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

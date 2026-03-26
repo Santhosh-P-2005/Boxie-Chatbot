@@ -1,0 +1,79 @@
+.slds-form-element__label{
+	font-weight:600;
+}
+
+.help-text-1{
+	position: relative;
+	left: 100px;
+}
+
+.help-text-2{
+	display: none;
+}
+
+@media only screen and (max-width: 600px) {
+	.help-text-2{
+		left: 95px !important;
+	}
+}
+
+
+@media only screen and (max-width: 900px) {
+
+	.help-text-1{
+		display: none;
+	}
+
+	.help-text-2{
+		display: block;
+		position: relative;
+		top: -57px;
+    	left: 85px;
+	}
+
+	.call-input-btn-container{
+
+		display: flex;
+
+		flex-direction: row;
+	}
+
+	.input-container{
+
+		flex-direction: column;
+
+		width: 200%;
+	}
+
+	.call-input-btn{
+
+		width: 100% !important;
+
+		padding-right: 0 !important;
+
+	}
+
+}
+
+@media (min-width: 901px) and (max-width: 1300px){
+
+	.type-action{
+
+		width: 50% !important;
+
+	}
+}
+
+.call-input-btn-container{
+
+	display: flex;
+
+	flex-direction: row;
+
+}
+
+.input-container{
+
+	width: 100%;
+
+}

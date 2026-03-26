@@ -1,0 +1,70 @@
+.slds-combobox_container {
+    width: 100%;
+}
+
+.slds-dropdown_length-5 {
+    max-height: 215px; /* Shows exactly 5 items with headers */
+    overflow-y: auto;
+}
+
+.slds-listbox__option [lightning-icon] {
+    margin-right: 0.5rem;
+}
+
+.slds-dropdown {
+    background: white !important;
+    border: 1px solid #ccc !important;
+    z-index: 9999 !important;
+    position: absolute !important;
+}
+
+.slds-media {
+    display: flex;
+    padding: 7px;
+}
+
+
+.slds-combobox__form-element{
+    cursor: pointer;
+}
+
+.slds-input .slds-combobox__input{
+    cursor: pointer;
+}
+
+.slds-combobox_container{
+    cursor: pointer;
+}
+
+.search-icon{
+    position: absolute;
+    top: 8px;
+    left: 10px;
+}
+
+
+.slds-form-element{
+    cursor: pointer;
+}
+
+
+/* iPhone and small devices (portrait & landscape) */
+/* @media screen and (max-device-width: 480px) and (-webkit-min-device-pixel-ratio: 2) {
+    .search-icon {
+        top: 12px;
+    }
+} */
+
+/* iPads (portrait & landscape) */
+
+
+@media only screen and (max-width: 600px){
+    .header-search{
+        height: 32px !important;
+    }
+}
+@media screen and (min-device-width: 768px) and (max-device-width: 1024px) and (-webkit-min-device-pixel-ratio: 2) {
+    .search-icon {
+        top: 12px;
+    }
+}

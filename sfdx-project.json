@@ -1,0 +1,28 @@
+{
+  "packageDirectories": [
+    {
+      "versionName": "ver 0.1",
+      "versionNumber": "0.1.0.NEXT",
+      "path": "force-app",
+      "default": true,
+      "package": "Smart Messenger",
+      "versionDescription": "Smart Messenger with SMS and WhatsApp functionalities"
+    },
+    {
+      "versionName": "ver 0.1",
+      "versionNumber": "0.1.0.NEXT",
+      "path": "force-app",
+      "default": false,
+      "package": "Boxie Messenger",
+      "versionDescription": "Boxie Messenger with Twilio WhatsApp functionalities"
+    }
+  ],
+  "name": "Smart Messenger",
+  "namespace": "SmartMsg",
+  "sfdcLoginUrl": "https://login.salesforce.com",
+  "sourceApiVersion": "63.0",
+  "packageAliases": {
+    "Smart Messenger": "0HoVW00000002TF0AY",
+    "Boxie Messenger": "0HoVW00000002Ur0AI"
+  }
+}

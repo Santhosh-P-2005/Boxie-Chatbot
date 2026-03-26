@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Pinned__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>This shows whether the message is pinned by the user on the chat Application</description>
+    <inlineHelpText>This shows whether the message is pinned by the user on the chat Application</inlineHelpText>
+    <label>Pinned</label>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

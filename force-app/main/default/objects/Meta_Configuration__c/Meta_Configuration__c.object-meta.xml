@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customSettingsType>Hierarchy</customSettingsType>
+    <description>Configure the Meta API Credentials here to send WhatsApp Messages</description>
+    <enableFeeds>false</enableFeeds>
+    <label>Meta Configuration</label>
+    <visibility>Protected</visibility>
+</CustomObject>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Twilio_Phone_Number__c</fullName>
+    <description>The phone number from your Twilio Account</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Enter your Twilio Phone Number with country code (Eg: +18574435576)</inlineHelpText>
+    <label>Twilio Phone Number</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

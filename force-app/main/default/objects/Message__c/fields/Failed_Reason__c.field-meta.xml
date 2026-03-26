@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Failed_Reason__c</fullName>
+    <description>Stores the Error message if the sent message has been failed</description>
+    <inlineHelpText>Stores the Error message if the sent message has been failed</inlineHelpText>
+    <label>Failed Reason</label>
+    <length>100000</length>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>5</visibleLines>
+</CustomField>

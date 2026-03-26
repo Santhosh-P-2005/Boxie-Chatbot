@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>List_Picker_With_Description__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>When true, this Twilio list-picker template uses separate variables for item title and description (2,3, 4,5, ...). When false, uses flat variables (2, 3, ...) for item text only.</description>
+    <label>List Picker With Description</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

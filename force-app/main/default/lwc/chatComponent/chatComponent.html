@@ -1,0 +1,1334 @@
+<template>
+   <template if:true={hasActiveProvider}>
+   <div class="custom-card slds-card">
+      <template if:true={isPermissionError}>
+         <div class="slds-p-around_medium">
+            You do not have the required permissions to access this feature.
+         </div>
+      </template>
+      <template if:true={showTemplateModal}>
+         <div if:false={isMobile}>
+            <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01"
+               class="slds-modal slds-fade-in-open slds-modal_large">
+               <div class="slds-modal__container">
+                  <header class="slds-modal__header">
+                     <button class="slds-button slds-button_icon slds-modal__close" onclick={closeModal}>
+                        <lightning-icon icon-name="utility:close" alternative-text="Close" size="medium"
+                           variant="inverse"></lightning-icon>
+                     </button>
+                     <h2 class="slds-modal__title">{label.SELECT_TEMPLATE_LABEL}</h2>
+                  </header>
+                  <div class="slds-modal__content slds-p-around_medium">
+                     <div class="slds-form-element slds-p-bottom_small">
+                        <div class="slds-form-element__control">
+                           <input type="text" id="templateSearch" class="slds-input slds-size_1-of-3"
+                              placeholder="Search Template Name" oninput={handleSearch}>
+                        </div>
+                     </div>
+                     <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+                        <thead>
+                           <tr class="slds-line-height_reset">
+                              <th scope="col" class="slds-text-heading_small heading" style="width: 30%;">
+                                 {label.NAME_LABEL}
+                              </th>
+                              <th scope="col" class="slds-text-heading_small heading" style="width: 45%;">
+                                 {label.MESSAGE_BODY_LABEL}
+                              </th>
+                              <th scope="col" class="slds-text-heading_small heading" style="width: 25%;">
+                                 {label.CHANNEL_LABEL}
+                              </th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           <template for:each={filteredTemplates} for:item="template">
+                              <tr key={template.Id} onclick={handleRowClick} data-id={template.Id}
+                                 class="slds-hint-parent">
+                                 <td data-label="Name" class="slds-truncate" data-recordid={template.Id}>
+                                    <a onclick={handleTemplateName}>{template.SmartMsg__Template_Name__c}</a>
+                                 </td>
+                                 <td data-label="Message Body" class="slds-truncate slds-truncate-wrap">
+                                    {template.SmartMsg__Body__c}
+                                 </td>
+                                 <td data-label="Channel" class="slds-truncate">{template.SmartMsg__Channel__c}</td>
+                              </tr>
+                           </template>
+                        </tbody>
+                     </table>
+                  </div>
+                  <footer class="slds-modal__footer">
+                  </footer>
+               </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+         </div>
+         <div if:true={isMobile}>
+            <div class="modal__container slds-card">
+               <div class="modal__header">
+                  <button class="slds-button slds-button_icon modal__close " onclick={closeModal}>
+                     <lightning-icon icon-name="utility:close" alternative-text="Close" size="small"></lightning-icon>
+                  </button>
+                  <h2 class="__title">{label.SELECT_TEMPLATE_LABEL}</h2>
+               </div>
+               <div class="modal__content slds-p-around_medium">
+                  <div class="slds-form-element slds-p-bottom_small">
+                     <div class="slds-form-element__control">
+                        <input type="text" id="templateSearch1" class="slds-input slds-size_1-of-3"
+                           placeholder="Search Template Name" oninput={handleSearch}>
+                     </div>
+                  </div>
+                  <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+                     <thead>
+                        <tr class="slds-line-height_reset">
+                           <th scope="col" class="slds-text-title_caps" style="width: 30%;">{label.NAME_LABEL}
+                           </th>
+                           <th scope="col" class="slds-text-title_caps" style="width: 45%;">
+                              {label.MESSAGE_BODY_LABEL}
+                           </th>
+                           <th scope="col" class="slds-text-title_caps" style="width: 25%;">
+                              {label.CHANNEL_LABEL}
+                           </th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        <template for:each={filteredTemplates} for:item="template">
+                           <tr key={template.Id} onclick={handleRowClick} data-id={template.Id}
+                              class="slds-hint-parent">
+                              <td data-label="Name" class="slds-truncate">{template.SmartMsg__Template_Name__c}</td>
+                              <td data-label="Message Body" class="slds-truncate slds-truncate-wrap">
+                                 {template.SmartMsg__Body__c}
+                              </td>
+                              <td data-label="Channel" class="slds-truncate">{template.SmartMsg__Channel__c}</td>
+                           </tr>
+                        </template>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+         </div>
+      </template>
+      <template if:true={showMediaUrlModal}>
+         <!-- Whatss App -->
+         <div if:false={isMobile}>
+            <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01"
+               class="slds-modal slds-fade-in-open slds-modal_small">
+               <div class="slds-modal__container">
+                  <header class="slds-modal__header">
+                     <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        title="Close" onclick={closeMediaUrlModal}>
+                        <lightning-icon icon-name="utility:close" alternative-text="close" size="small"
+                           variant="inverse"></lightning-icon>
+                        <span class="slds-assistive-text">{label.CLOSE_LABEL}</span>
+                     </button>
+                     <h2 class="slds-text-heading_medium">{label.ENTER_MEDIA_URL_LABEL}</h2>
+                  </header>
+                  <div class="slds-modal__content slds-p-around_medium">
+                     <div if:true={isDocument}>
+                        <lightning-input label="File Name" value={fileName} onchange={handleFileNameChange} required>
+                        </lightning-input>
+                        <template if:true={fileNameError}>
+                           <p class="slds-text-color_error">File Name is required.</p>
+                        </template>
+                     </div>
+                     <lightning-input label="Media URL" value={mediaUrl} onchange={handleMediaUrlChange} required>
+                     </lightning-input>
+                     <template if:true={mediaUrlError}>
+                        <p class="slds-text-color_error">Media URL is required.</p>
+                     </template>
+                  </div>
+                  <footer class="slds-modal__footer">
+                     <button class="slds-button slds-button_neutral"
+                        onclick={closeMediaUrlModal}>{label.CANCEL_LABEL}</button>
+                     <button class="slds-button slds-button_brand"
+                        onclick={handleSaveMediaUrl}>{label.SAVE_LABEL}</button>
+                  </footer>
+               </div>
+               <!-- <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+                  </section> -->
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+         </div>
+         <template if:true={isMobile}>
+            <div class="mediaUrl__container slds-card">
+               <div class="media__header">
+                  <button class="slds-button slds-button_icon modal__close" onclick={closeMediaUrlModal}>
+                     <lightning-icon icon-name="utility:close" alternative-text="Close" size="small"></lightning-icon>
+                     <span class="slds-assistive-text">{label.CLOSE_LABEL}</span>
+                  </button>
+                  <h2 class="media-title">{label.ENTER_MEDIA_URL_LABEL}</h2>
+               </div>
+               <div class="media__content slds-p-around_medium">
+                  <div if:true={isDocument}>
+                     <lightning-input label="File Name" value={fileName} onchange={handleFileNameChange} required>
+                     </lightning-input>
+                     <template if:true={fileNameError}>
+                        <p class="slds-text-color_error">File Name is required.</p>
+                     </template>
+                  </div>
+                  <lightning-input label="Media URL" value={mediaUrl} onchange={handleMediaUrlChange} required>
+                  </lightning-input>
+                  <template if:true={mediaUrlError}>
+                     <p class="slds-text-color_error">Media URL is required.</p>
+                  </template>
+               </div>
+               <div class="media__footer">
+                  <button class="slds-button slds-button_neutral"
+                     onclick={closeMediaUrlModal}>{label.CANCEL_LABEL}</button>
+                  <button class="slds-button slds-button_brand" onclick={handleSaveMediaUrl}>{label.SAVE_LABEL}</button>
+               </div>
+            </div>
+         </template>
+      </template>
+      <template if:false={isPermissionError}>
+         <!-- <div class="slds-card__header margin-zero"> 
+            <div class="slds-media"> 
+            
+                <div class="slds-media__figure"> 
+            
+                </div> 
+            
+                <div class="slds-media__body"> 
+            
+                    <h2 class="slds-card__header-title">{contactName}</h2> 
+            
+                </div> 
+            
+            </div> 
+            
+            </div> -->
+         <div class="slds-card__body margin-zero">
+            <div class="scrollable-container">
+               <template if:false={hideUtilityBarElements}>
+                  <div class="slds-card__header" style="padding-top: 12px;">
+                     <div class="slds-media">
+                        <div class="slds-media__figure"></div>
+                        <div class="slds-media__body">
+                           <!-- <h2 class="slds-card__header-title">{contactName}</h2> -->
+                           <!-- <lightning-icon icon-name="standard:live_chat" alternative-text="close" size="Medium" style="background:transparent"></lightning-icon> -->
+                           <h2 class="slds-card__header-title">
+                              <img src={aiStar} alt="Image" class="Header-logo" />Messenger
+                           </h2>
+                           <!--div class="header-right"-->
+                           <!-- </template> -->
+                           <div class="icon-container">
+                              <template if:true={showTwilioFromNumberDropdown}>
+                                 <div class="from-number-top-wrapper">
+                                    <span class="from-number-label">From :</span>
+                                    <lightning-combobox name="twilioFromNumber" value={selectedTwilioFromNumber}
+                                       options={twilioFromNumberOptions} onchange={handleTwilioFromNumberChange}
+                                       placeholder="Select From Number" variant="label-hidden" dropdown-alignment="auto"
+                                       class="from-number-dropdown-top" aria-label="Select From Number (Twilio WhatsApp)">
+                                    </lightning-combobox>
+                                 </div>
+                              </template>
+                              <template if:true={selectedContact}>
+                                 <!-- <div class="Contact-Switch"> 
+                                 <lightning-icon icon-name="standard:people" size="small" 
+                                 
+                                     alternative-text="Refresh" class="contact-icon" 
+                                 
+                                     onclick={handleContactSwitch}></lightning-icon> 
+                                 
+                                 <lightning-icon icon-name="utility:down" size="x-small" 
+                                 
+                                     alternative-text="Refresh" class="down-icon" onclick={handleContactSwitch} 
+                                 
+                                     style="fill:#fff"></lightning-icon> 
+                                 
+                                 </div> -->
+                                 <c-generic-lookup parent-object-name={objectApiName} parent-id={recordId}
+                                    display-fields="Name,Phone" icon-name="utility:search" placeholder="Search Contact"
+                                    selected-record={selectedContact} default-selected-option={defaultSelectedOption}
+                                    onselect={handleContactSelected} class="search-contact">
+                                 </c-generic-lookup>
+                              </template>
+                              <!-- <lightning-button-icon icon-name="utility:search" alternative-text="Search Messages" 
+                              size="x-large" onclick={toggleSearch} class="search-icon" title="Search Messages"> 
+                              
+                              </lightning-button-icon> -->
+                              <div class="wa-header-row">
+                                 <template if:true={showChatbotToggle}>
+                                    <div class="wa-toggle-vertical">
+                                       <label class="wa-toggle-wrapper">
+                                          <input
+                                             type="checkbox"
+                                             class="wa-toggle-input"
+                                             checked={isAutoReplyEnabled}
+                                             onchange={handleAutoReplyChange}
+                                             role="switch"
+                                             aria-checked={isAutoReplyEnabled}
+                                          />
+                                          <span class="wa-toggle-slider"></span>
+                                       </label>
+                                       <div class="wa-toggle-subtitle">Chatbot on/off</div>
+                                    </div>
+                                 </template>
+                                 <div class="refresh-desktop">
+                                    <lightning-icon icon-name="action:refresh" size="small" alternative-text="Refresh"
+                                       class="refresh-icon" onclick={handleRefresh} title="Refresh Conversation">
+                                    </lightning-icon>
+                                 </div>
+                              </div>
+                              <lightning-button-menu icon-name="utility:threedots_vertical"
+                                 alternative-text="More Options" menu-alignment="right" variant="border-filled"
+                                 onselect={handleMenuSelect} class="header-menu" title="More options">
+                                 <div class="more-option-container">
+                                    <div onclick={handleRefresh} class="refresh-res">
+                                       <lightning-menu-item label="Refresh" size="small" alternative-text="Refresh"
+                                          class="refresh-icon" onclick={handleRefresh} title="Refresh Conversation">
+                                       </lightning-menu-item>
+                                    </div>
+                                    <lightning-menu-item value="search" label="Search Messages"></lightning-menu-item>
+                                    <lightning-menu-item value="starred" label={starMenuLabel}></lightning-menu-item>
+                                    <!-- <lightning-menu-item value="pinned" label="Show Pinned Message"></lightning-menu-item> -->
+                                    <lightning-menu-item value="download" label="Download Chat Transcript">
+                                    </lightning-menu-item>
+                                    <!-- <lightning-menu-item value="about" label="About"></lightning-menu-item> -->
+                                 </div>
+                              </lightning-button-menu>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </template>
+               <template if:true={pinnedMessage}>
+                  <div class="pinned-banner slds-p-around_small slds-theme_inverse" onclick={scrollToPinnedMessage}>
+                     <lightning-icon icon-name="utility:pin" size="x-small" class="slds-m-right_x-small">
+                     </lightning-icon>
+                     <span>{pinnedMessage.SmartMsg__Message_Body__c}</span>
+                     <lightning-button-icon icon-name="utility:close" size="xx-small" alternative-text="Unpin"
+                        onclick={handleUnpinMessage} class="slds-m-left_x-small" style="margin-left: auto">
+                     </lightning-button-icon>
+                  </div>
+               </template>
+               <section role="log" class={chatAreaClass}>
+                  <lightning-spinner alternative-text="Loading" size="small" variant="brand" if:true={isSpinner}>
+                  </lightning-spinner>
+                  <template if:true={isMobile}>
+                     <template if:true={openFileModal}>
+                        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+                           <div class="slds-modal__container upload-mobile">
+                              <header class="slds-modal__header">
+                                 <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                                    title="Close">
+                                    <lightning-icon icon-name="utility:close" alternative-text="close" size="small"
+                                       onclick={closeFileModal}></lightning-icon>
+                                    <span class="slds-assistive-text">close</span>
+                                 </button>
+                                 <h2 class="slds-text-heading_medium">Add Files with Message!</h2>
+                              </header>
+                              <div class="slds-modal__content slds-p-around_medium">
+                                 <lightning-input name="AddFile" label="Attach File" type="file" accept=".png"
+                                    onchange={handleFileUploaded}>
+                                 </lightning-input>
+                                 <template if:true={fileError}>
+                                    <span class="slds-required">{fileError}</span>
+                                 </template>
+                                 <template if:true={fileName}>
+                                    <span style="font-weight: 600;padding: 5px">{fileName}</span>
+                                 </template>
+                              </div>
+                              <footer class="slds-modal__footer">
+                                 <lightning-button variant="neutral" label="Cancel"
+                                    onclick={closeFileModal}></lightning-button>
+                                 <lightning-button variant="brand" label="Upload" onclick={uploadFileData}
+                                    style="margin-left:20px">
+                                 </lightning-button>
+                              </footer>
+                           </div>
+                        </section>
+                        <!-- <div class="slds-backdrop slds-backdrop_open"></div> -->
+                     </template>
+                  </template>
+
+                  <template if:true={isSearchActive}>
+                     <div class="search-bar-container">
+                        <div class="search-bar">
+                           <lightning-input type="text" placeholder="Search messages..." class="search-input"
+                              variant="label-hidden" value={searchQuery} onchange={handleSearchInput}
+                              style="color:#000">
+                           </lightning-input>
+                           <lightning-button-icon icon-name="utility:close" alternative-text="Close Search"
+                              onclick={toggleSearch} class="close-icon"></lightning-button-icon>
+                        </div>
+                     </div>
+                  </template>
+
+                  <h2 class="start-convo" if:false={messages}>{label.START_YOUR_CONVERSATION_LABEL}</h2>
+                  <ul class="slds-chat-list">
+                     <template if:true={noMessagesFound}>
+                        <li>
+                           <div class="slds-box slds-theme_alert-texture slds-theme_warning slds-m-around_medium">
+                              <lightning-icon icon-name="utility:warning" size="small"
+                                 class="slds-m-right_x-small"></lightning-icon>
+                              No messages found for the selected phone number.
+                           </div>
+                        </li>
+                     </template>
+                     <!-- <template if:false={starredMessageIds}>
+                        <h1>There are no starred messages yet !</h1>
+                     </template> -->
+                     <template if:true={noStarredMessage}>
+                        <div class="slds-box slds-theme_alert-texture slds-theme_warning slds-m-around_medium">
+                              <lightning-icon icon-name="utility:warning" size="small"
+                                 class="slds-m-right_x-small"></lightning-icon>
+                              There are no starred messages yet !
+                           </div>
+                        
+                     </template>
+                     <template for:each={groupedMessages} for:item="group" for:index="index">
+                        <div key={group.date}>
+                           <div class="dateContainer">
+                              <div class="date">
+                                 {group.date}
+                              </div>
+                           </div>
+                           <template for:each={group.messages} for:item="message" for:index="index">
+                              <li if:true={message.Incoming} key={message.Id} data-message-id={message.Id}
+                                 class="slds-chat-listitem slds-chat-listitem_inbound">
+                                 <div class="slds-chat-message message-hover-wrapper-incoming">
+                                    <div class="slds-chat-message__body">
+                                       <div class="msg-str-container">
+                                          <div class="slds-chat-message__text slds-chat-message__text_inbound">
+                                             <div class="MediaandMenu">
+
+                                                <template if:true={message.isWhatsApp}>
+
+                                                   <!-- <template if:true={message.isStarred}>
+                                                   <lightning-icon icon-name="utility:favorite" variant="brand"
+                                                      size="x-small" class="starred-message-icon"
+                                                      alternative-text="Starred"></lightning-icon>
+                                                   </template> -->
+                                                   <template if:true={message.isMedia}>
+                                                      <div class="image-message-container">
+                                                         <template if:true={message.isImage}>
+                                                            <img src={message.imageUrl} alt="Image"
+                                                               class="image-message" onclick={openMedia}
+                                                               data-url={message.imageUrl} />
+                                                         </template>
+                                                         <!-- Show spinner while image is loading -->
+                                                      </div>
+                                                      <template if:false={message.imageUrl}>
+                                                         <lightning-icon icon-name="doctype:image"
+                                                            alternative-text="Image file" title="Image">
+                                                         </lightning-icon>
+                                                      </template>
+                                                      <template if:true={message.isPdf}>
+                                                         <lightning-icon icon-name="doctype:pdf"
+                                                            alternative-text="Image file" title="Image"
+                                                            onclick={openMedia} data-url={message.imageUrl}
+                                                            style="cursor: pointer">
+                                                         </lightning-icon>
+                                                      </template>
+                                                      <template if:true={message.isVideo}>
+                                                         <lightning-icon icon-name="doctype:mp4"
+                                                            alternative-text="MP4 file" title="MP4" onclick={openMedia}
+                                                            data-url={message.imageUrl} style="cursor: pointer">
+                                                         </lightning-icon>
+                                                      </template>
+                                                      <template if:true={message.isAudio}>
+                                                         <lightning-icon icon-name="doctype:audio"
+                                                            alternative-text="Audio file" title="Audio"
+                                                            onclick={openMedia} data-url={message.imageUrl}
+                                                            style="cursor: pointer">
+                                                         </lightning-icon>
+                                                      </template>
+                                                   </template>
+                                                   <template if:true={message.isLocation}>
+                                                      <div>
+                                                         <a href={message.locationUrl} target="_blank">
+                                                            <img src={mapImageUrl} alt="Map Image" />
+                                                         </a>
+                                                         <div style="margin-top: 0.5rem;">
+                                                            <a href={message.locationUrl} target="_blank"
+                                                               style="text-decoration: none; color: #1a73e8; font-weight: 600;">
+                                                               View Location
+                                                            </a>
+                                                         </div>
+                                                         <div>
+                                                            <strong
+                                                               style="text-decoration: none;">{message.locationName}</strong>
+                                                         </div>
+                                                      </div>
+                                                   </template>
+
+                                                </template>
+                                                <!-- <template if:true={message.isImage}>
+                                                <span>
+                                                <img src={message.base64ImageUrl} alt="Image"
+                                                   class="message-image" />
+                                                </span>
+                                             </template> -->
+                                                <div class="inbound-menu-wrapper">
+                                                   <lightning-button-icon icon-name="utility:threedots"
+                                                      alternative-text="Show actions" variant="bare"
+                                                      class="menu-icon incoming-message" data-id={message.Id}
+                                                      onclick={handleMenuToggle}>
+                                                   </lightning-button-icon>
+                                                   <template if:true={message.showMenu}>
+                                                      <div class="inbound-custom-dropdown">
+                                                         <div class="dropdown-item" onclick={handlePinMessage}
+                                                            data-id={message.Id}>{message.pinLabel}</div>
+                                                         <div class="dropdown-item" onclick={handleStarMessage}
+                                                            data-id={message.Id}>{message.starLabel}</div>
+                                                      </div>
+                                                   </template>
+                                                </div>
+                                             </div>
+                                             <template if:true={message.isSMS}>
+                                                <template if:true={message.SmartMsg__Message_Body__c}>
+                                                   <span class="text-bound">
+                                                      <lightning-formatted-rich-text
+                                                         value={message.SmartMsg__Message_Body__c} class="MessageBody"
+                                                         style="padding: 0.3rem 1rem 0rem 0.5rem;"></lightning-formatted-rich-text>
+                                                   </span>
+                                                </template>
+                                                <!-- <template if:true={message.isStarred}>
+                                                   <lightning-icon icon-name="utility:favorite" variant="brand"
+                                                      size="x-small" class="starred-message-icon"
+                                                      alternative-text="Starred"></lightning-icon>
+                                                   </template> -->
+                                             </template>
+                                             <template if:true={message.isWhatsApp}>
+                                                <template if:true={message.SmartMsg__Message_Body__c}>
+                                                   <template if:true={message.parentMessage}>
+                                                      <p>Parent Message</p>
+                                                      <div class="reply-container">
+                                                         <div class="reply-line"></div>
+                                                         <div class="reply-content">
+                                                            <div class="reply-label">Replying to</div>
+                                                            <template if:true={message.parentMessage.isMedia}>
+                                                               <div class="reply-preview">
+                                                                  <lightning-icon icon-name="utility:image"
+                                                                     size="xx-small"></lightning-icon>
+                                                                  <span class="reply-text">Media</span>
+                                                               </div>
+                                                            </template>
+                                                            <template if:false={message.parentMessage.isMedia}>
+                                                               <div class="reply-text">
+                                                                  “{message.parentMessage.body}”
+                                                               </div>
+                                                            </template>
+                                                         </div>
+                                                      </div>
+                                                   </template>
+                                                   <span class="text-bound">
+                                                      <lightning-formatted-rich-text
+                                                         value={message.SmartMsg__Message_Body__c} class="MessageBody"
+                                                         style="padding: 0.3rem 1rem 0rem 0.5rem;"></lightning-formatted-rich-text>
+                                                   </span>
+                                                </template>
+                                             </template>
+                                          </div>
+                                          <template if:true={message.isStarred}>
+                                             <lightning-icon icon-name="utility:favorite" variant="brand" size="x-small"
+                                                class="starred-message-icon-inbound" alternative-text="Starred">
+                                             </lightning-icon>
+                                          </template>
+                                       </div>
+                                       <div class="slds-chat-message__meta" aria-label="said Andy Martinez at 5:29 PM">
+                                          <template if:true={message.isSMS}>
+                                             <lightning-icon icon-name="standard:sms" class="sms-icon" size="small">
+                                             </lightning-icon>
+                                          </template>
+                                          <template if:true={message.isWhatsApp}>
+                                             <img src={whatsappIconUrl} class="whatsApp-icon-meta"
+                                                alt="WhatsApp Icon" />
+                                          </template>
+                                          <p class="message-time">{message.formattedTime}</p>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </li>
+                              <li if:true={message.Outgoing} key={message.Id} data-message-id={message.Id}
+                                 class="slds-chat-listitem slds-chat-listitem_outbound">
+                                 <div class="message-hover-wrapper" onmouseenter={handleShowActions}
+                                    onmouseleave={handleHideActions} onclick={handleStickyActions} data-id={message.Id}>
+                                    <template if:true={message.Scheduled}>
+                                       <div class="slds-chat-message">
+                                          <div class="slds-chat-message__body">
+                                             <div
+                                                class="slds-chat-message__text slds-chat-message__text_outbound scheduled-message">
+                                                <div class="Sending" aria-label="Scheduled message">
+                                                   <template if:true={message.isSMS}>
+                                                      <span class="scheduled-text">{label.SENDING_ON_LABEL}
+                                                         {message.formattedScheduledTime}</span>
+                                                   </template>
+                                                   <template if:true={message.isWhatsApp}>
+                                                      <span class="scheduled-text">{label.SENDING_ON_LABEL}
+                                                         {message.formattedScheduledTime}</span>
+                                                   </template>
+                                                </div>
+                                                <span class="scheduled-msg-body">
+                                                   <template if:true={message.isSMS}>
+                                                      <span>{message.SmartMsg__Message_Body__c}</span>
+
+                                                      <!-- <lightning-formatted-rich-text 
+                                                         value={message.Message_Body__c}></lightning-formatted-rich-text> 
+                                                         
+                                                         &nbsp; &nbsp; -->
+                                                   </template>
+                                                   <template if:true={message.isWhatsApp}>
+                                                      <lightning-formatted-rich-text
+                                                         value={message.SmartMsg__Message_Body__c}>
+                                                      </lightning-formatted-rich-text>
+                                                      &nbsp; &nbsp;
+                                                   </template>
+                                                   <lightning-icon icon-name="utility:clock" class="scheduled-icon"
+                                                      size="xx-small">
+                                                   </lightning-icon>
+                                                </span>
+                                             </div>
+                                             <div class="slds-chat-message__meta scheduled-msg-body"
+                                                aria-label="said Amber Cann at 5:23 PM">
+                                                <p class="message-time">{message.formattedTime}</p>
+                                                <template if:true={message.isSMS}>
+                                                   <lightning-icon icon-name="standard:sms" class="sms-icon"
+                                                      size="small">
+                                                   </lightning-icon>
+                                                </template>
+                                                <template if:true={message.isWhatsApp}>
+                                                   <img src={whatsappIconUrl} class="whatsApp-icon-meta"
+                                                      alt="WhatsApp Icon" />
+                                                   <template if:true={message.sent}>
+                                                      <img src={sentIconURL} class="whatsApp-icon-meta"
+                                                         alt="WhatsApp Seen Icon" />
+                                                   </template>
+                                                   <template if:true={message.delivered}>
+                                                      <img src={deliveredIconUrl} class="whatsApp-icon-meta"
+                                                         alt="WhatsApp Seen Icon" />
+                                                   </template>
+                                                   <template if:true={message.read}>
+                                                      <img src={seenIconUrl} class="whatsApp-icon-meta"
+                                                         alt="WhatsApp Seen Icon" />
+                                                   </template>
+                                                </template>
+                                             </div>
+                                          </div>
+                                       </div>
+                                    </template>
+                                    <template if:false={message.Scheduled}>
+                                       <div class="slds-chat-message">
+                                          <div class="slds-chat-message__body">
+                                             <div style="display:flex; align-items: baseline;">
+                                                <template if:true={message.isStarred}>
+                                                   <lightning-icon icon-name="utility:favorite" variant="brand"
+                                                      size="x-small" class="starred-message-icon out-bound-star"
+                                                      alternative-text="Starred"></lightning-icon>
+                                                </template>
+                                                <div class="slds-chat-message__text slds-chat-message__text_outbound">
+                                                   <template if:true={message.isSMS}>
+                                                      <span class="text-bound">
+                                                         <template if:true={message.SmartMsg__Message_Body__c}>
+                                                            <lightning-formatted-rich-text
+                                                               value={message.SmartMsg__Message_Body__c}
+                                                               style="padding: 0.3rem 0rem 0rem 0.5rem;margin-right: 2rem;"></lightning-formatted-rich-text>
+                                                         </template>
+                                                      </span>
+                                                      <template if:true={message.isMedia}>
+                                                         <div class="image-message-container">
+                                                            <template if:true={message.isImage}>
+                                                               <img src={message.imageUrl} alt="Image"
+                                                                  class="image-message" onclick={openMedia}
+                                                                  data-url={message.imageUrl} />
+                                                            </template>
+                                                            <!-- Show spinner while image is loading -->
+                                                         </div>
+                                                         <template if:false={message.imageUrl}>
+                                                            <lightning-icon icon-name="doctype:image"
+                                                               alternative-text="Image file" title="Image">
+                                                            </lightning-icon>
+                                                         </template>
+                                                         <template if:true={message.isPdf}>
+                                                            <lightning-icon icon-name="doctype:pdf"
+                                                               alternative-text="Image file" title="Image"
+                                                               onclick={openMedia} data-url={message.imageUrl}
+                                                               style="cursor: pointer">
+                                                            </lightning-icon>
+                                                         </template>
+                                                         <template if:true={message.isVideo}>
+                                                            <lightning-icon icon-name="doctype:mp4"
+                                                               alternative-text="MP4 file" title="MP4"
+                                                               onclick={openMedia} data-url={message.imageUrl}
+                                                               style="cursor: pointer">
+                                                            </lightning-icon>
+                                                         </template>
+                                                         <template if:true={message.isAudio}>
+                                                            <lightning-icon icon-name="doctype:audio"
+                                                               alternative-text="Audio file" title="Audio"
+                                                               onclick={openMedia} data-url={message.imageUrl}
+                                                               style="cursor: pointer">
+                                                            </lightning-icon>
+                                                         </template>
+                                                      </template>
+                                                   </template>
+                                                   <template if:true={message.isWhatsApp}>
+                                                      <template if:true={message.isMedia}>
+                                                         <div class="image-message-container">
+                                                            <template if:true={message.isImage}>
+                                                               <template if:true={message.imageUrlIsSalesforce}>
+                                                                  <img src={message.imageUrl} alt="Image"
+                                                                     class="image-message" onclick={openMedia}
+                                                                     data-url={message.imageUrl} />
+                                                               </template>
+                                                               <template if:false={message.imageUrlIsSalesforce}>
+                                                                  <div class="image-fallback"
+                                                                     onclick={handleExternalMediaClick}
+                                                                     data-url={message.SmartMsg__Media_Url__c}>
+                                                                     <lightning-icon icon-name="doctype:image"
+                                                                        size="medium" style="cursor:pointer"
+                                                                        alternative-text="Click here to view the media"
+                                                                        title="Click here to view the media"></lightning-icon>
+                                                                  </div>
+                                                               </template>
+                                                            </template>
+                                                         </div>
+                                                         <template if:true={message.isPdf}>
+                                                            <lightning-icon icon-name="doctype:pdf"
+                                                               alternative-text="Image file" title="Image"
+                                                               onclick={openMedia} data-url={message.imageUrl}
+                                                               style="cursor: pointer">
+                                                            </lightning-icon>
+                                                         </template>
+                                                         <template if:true={message.isVideo}>
+                                                            <lightning-icon icon-name="doctype:mp4"
+                                                               alternative-text="MP4 file" title="MP4"
+                                                               onclick={openMedia} data-url={message.imageUrl}
+                                                               style="cursor: pointer">
+                                                            </lightning-icon>
+                                                         </template>
+                                                         <template if:true={message.isAudio}>
+                                                            <lightning-icon icon-name="doctype:audio"
+                                                               alternative-text="Audio file" title="Audio"
+                                                               onclick={openMedia} data-url={message.imageUrl}
+                                                               style="cursor: pointer">
+                                                            </lightning-icon>
+                                                         </template>
+                                                      </template>
+
+                                                      <span class="text-bound">
+                                                         <lightning-formatted-rich-text
+                                                            value={message.SmartMsg__Message_Body__c}
+                                                            style="padding: 0.3rem 0rem 0rem 0.5rem;margin-right: 2rem;"></lightning-formatted-rich-text>
+                                                      </span>
+                                                      <template if:true={message.isLocationRequest}>
+                                                         <div
+                                                            class="chat-bubble location-request slds-p-around_small slds-theme_shade slds-m-bottom_x-small">
+                                                            <div class="slds-media slds-media_center">
+                                                               <div class="slds-media__figure">
+                                                                  <lightning-icon icon-name="utility:pinned"
+                                                                     size="x-small"></lightning-icon>
+                                                               </div>
+                                                               <div class="slds-media__body slds-m-left_small">
+                                                                  <div class="slds-text-title_bold">Location Requested
+                                                                  </div>
+                                                               </div>
+                                                            </div>
+                                                         </div>
+                                                      </template>
+
+                                                   </template>
+                                                </div>
+                                             </div>
+                                             <!--  -->
+                                             <div class="menu-wrapper">
+                                                <lightning-button-icon icon-name="utility:threedots"
+                                                   alternative-text="Show actions" variant="bare"
+                                                   class="menu-icon outgoing-Message" data-id={message.Id}
+                                                   onclick={handleMenuToggle}>
+                                                </lightning-button-icon>
+                                                <template if:true={message.showMenu}>
+                                                   <div class="custom-dropdown">
+                                                      <div class="dropdown-item" onclick={handlePinMessage}
+                                                         data-id={message.Id}>{message.pinLabel}
+                                                      </div>
+                                                      <div class="dropdown-item" onclick={handleStarMessage}
+                                                         data-id={message.Id}>{message.starLabel}
+                                                      </div>
+                                                   </div>
+                                                </template>
+                                             </div>
+                                             <div class="slds-chat-message__meta scheduled-msg-body"
+                                                aria-label="said Amber Cann at 5:23 PM">
+                                                <p class="message-time">{message.formattedTime}</p>
+                                                <template if:true={message.isSMS}>
+                                                   <lightning-icon icon-name="standard:sms" class="sms-icon"
+                                                      size="small"></lightning-icon>
+                                                   <template if:true={message.delivered}>
+                                                      <img src={deliveredIconUrl} class="whatsApp-icon-meta"
+                                                         alt="SMS Delivered Icon" />
+                                                   </template>
+                                                   <div if:true={message.isFailed} class="tooltip-container"
+                                                   style="position: relative; display: inline-block;">
+                                                   <button class="slds-button slds-button_icon"
+                                                      aria-describedby="failed-tooltip" title="Failed Reason">
+                                                      <lightning-icon icon-name="utility:warning" size="xx-small"
+                                                         alternative-text="Failed"
+                                                         style="cursor: pointer; --sds-c-icon-color-foreground-default: #CB0015;"
+                                                         class="retry-icon"></lightning-icon>
+                                                   </button>
+                                                   <div
+                                                      class="custom-tooltip slds-popover slds-popover_tooltip slds-nubbin_bottom-right">
+                                                      <div class="slds-popover__body" style="color: #ffffff">
+                                                         {message.SmartMsg__Failed_Reason__c}
+                                                      </div>
+                                                   </div>
+                                                </div>
+                                                </template>
+                                                <template if:true={message.isWhatsApp}>
+                                                   <img src={whatsappIconUrl} class="whatsApp-icon-meta"
+                                                      alt="WhatsApp Icon" />
+                                                   <template if:true={message.sent}>
+                                                      <img src={sentIconURL} class="whatsApp-icon-meta"
+                                                         alt="WhatsApp Sent Icon" />
+                                                   </template>
+                                                   <template if:true={message.delivered}>
+                                                      <img src={deliveredIconUrl} class="whatsApp-icon-meta"
+                                                         alt="WhatsApp Delivered Icon" />
+                                                   </template>
+                                                   <template if:true={message.read}>
+                                                      <img src={seenIconUrl} class="whatsApp-icon-meta"
+                                                         alt="WhatsApp Seen Icon" />
+                                                   </template>
+                                                   <div if:true={message.isFailed} class="tooltip-container"
+                                                   style="position: relative; display: inline-block;">
+                                                   <!-- Warning Icon -->
+                                                   <button class="slds-button slds-button_icon"
+                                                      aria-describedby="failed-tooltip" title="Failed Reason">
+                                                      <lightning-icon icon-name="utility:warning" size="xx-small"
+                                                         alternative-text="Retry"
+                                                         style="cursor: pointer; --sds-c-icon-color-foreground-default: #CB0015;"
+                                                         class="retry-icon"></lightning-icon>
+                                                   </button>
+                                                   <!-- Tooltip -->
+                                                   <div
+                                                      class="custom-tooltip slds-popover slds-popover_tooltip slds-nubbin_bottom-right">
+                                                      <div class="slds-popover__body" style="color: #ffffff">
+                                                         {message.SmartMsg__Failed_Reason__c}
+                                                      </div>
+                                                   </div>
+                                                </div>
+                                                </template>
+                                                
+                                             </div>
+                                          </div>
+                                       </div>
+                                    </template>
+                                 </div>
+                              </li>
+                           </template>
+                        </div>
+                     </template>
+                  </ul>
+                  <template if:true={isLocationRequest}>
+                     <lightning-button variant="brand" icon-name="utility:pinned" label="Request Location"
+                        onclick={handleRequestLocationClick}>
+                     </lightning-button>
+                  </template>
+               </section>
+               <template if:true={showReengagementPopup}>
+                  <div class="reengagement-popup">
+                     <div class="reengagement-message">
+                        <strong>24 hours limit</strong>
+                        <p>WhatsApp does not allow sending messages to a user 24 hours after they last messaged
+                           you. You can however send a template message.
+                        </p>
+                        <button class="send-template-button" onclick={handleSendTemplate}>Send Template
+                           Message</button>
+                     </div>
+                  </div>
+               </template>
+            </div>
+         </div>
+         <template if:true={aiLoading}>
+            <div class="ai-loading-indicator">
+               <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+               <lightning-icon icon-name="utility:einstein" size="small" alternative-text="Einstein"
+                  title="AI"></lightning-icon>
+               <span class="loading-text">Einstein is thinking...</span>
+            </div>
+         </template>
+         <div class="slds-card__footer footer-area margin-zero">
+            <template if:true={isMobile}>
+               <div class="footer-area margin-zero mobile-input slds-p-around_small" style="position:relative;">
+                  <!-- New Icon as Action Menu Trigger -->
+                  <lightning-button-icon icon-name="utility:new" variant="border-filled" alternative-text="More Actions"
+                     class="footer-action-icon" onclick={toggleFooterMenu}>
+                  </lightning-button-icon>
+                  <!-- Action Menu (show/hide with state) -->
+                  <template if:true={showFooterMenu}>
+                     <div class="footer-action-menu slds-popover slds-popover_tooltip slds-nubbin_bottom-left">
+                        <template if:true={showScheduleAndAttachment}>
+                           <button class="footer-menu-btn" onclick={showSchedule} title="Schedule">
+                              <span class="footer-menu-icon schedule-bg">
+                                 <lightning-icon icon-name="standard:shift_scheduling_operation"
+                                    size="small"></lightning-icon>
+                              </span>
+                           </button>
+                        </template>
+                        <button class="footer-menu-btn" onclick={showTemplates} title="Template">
+                           <span class="footer-menu-icon template-bg">
+                              <lightning-icon icon-name="action:follow" size="x-small"></lightning-icon>
+                           </span>
+                        </button>
+                        <template if:true={showScheduleAndAttachment}>
+                           <button class="footer-menu-btn" onclick={selectFileModal} title="Attach">
+                              <span class="footer-menu-icon attach-bg">
+                                 <lightning-icon icon-name="standard:attach" size="small"></lightning-icon>
+                              </span>
+                           </button>
+                        </template>
+                        <button class={footereinsteinToggleClass} onclick={toggleEinsteinMenu} title="Einstein">
+                           <span class="footer-menu-icon einstein-bg">
+                              <img src={agentForceIconUrl} alt="Einstein AI" class="einstein-icon" />
+                           </span>
+                        </button>
+                     </div>
+                  </template>
+                  <template if:true={showSchedulePopup}>
+                     <div class="scheduling-popup" onclick={stopPropagation}>
+                        <div class="schedule-head">
+                           <h1>{label.SEND_THIS_MESSAGE_ON_LABEL}</h1>
+                        </div>
+                        <div class="date-picker">
+                           <!-- <lightning-input variant="label-hidden" type="date" value={selectedDate} 
+                              min={todaysDate} onchange={handleDateChange} placeholder="Select the date"> 
+                              
+                              </lightning-input> -->
+                           <lightning-input type="date" label="Select Date" value={selectedDate} min={minDate}
+                              onchange={handleDateChange} class="picker-input">
+                           </lightning-input>
+                        </div>
+                        <div class="time-picker">
+                           <!-- <lightning-input variant="label-hidden" type="time" value={selectedTime} 
+                              onchange={handleTimeChange} placeholder="Select the time"></lightning-input> -->
+                           <lightning-input type="time" label="Select Time" value={selectedTime} min={minTime}
+                              onfocus={handleTime} onchange={handleTimeChange} disabled={isTimeDisabled}
+                              class="picker-input">
+                           </lightning-input>
+                        </div>
+                        <div class="error-message" if:true={errorMessage}>{errorMessage}</div>
+                        <div class="continue-button">
+                           <button label="Continue" class="slds-button_stretch slds-size_10-of-12 continue-btn"
+                              onclick={handleContinue}>
+                              <span class="continue-label">
+                                 {label.SCHEDULE_LABEL}
+                              </span>
+                           </button>
+                        </div>
+                     </div>
+                  </template>
+                  <!-- Input Box -->
+                  <div class="input-wrapper">
+                     <div class="input-wrapper">
+                        <lightning-combobox value={selectedPhoneField} options={phoneFieldOptions}
+                           onchange={handlePhoneFieldChange} variant="label-hidden" dropdown-alignment="bottom-left"
+                           class="phone-field-dropdown phone-input"
+                           aria-label="Select Phone Field"></lightning-combobox>
+                        <lightning-textarea class="chat-input msg-chat-input" type="text" value={messageText}
+                           placeholder="Type a message..." onchange={handleMessageInputChange}
+                           onkeydown={handleKeyPress} variant="bare">
+                        </lightning-textarea>
+                        <template if:true={limitMessage}>
+                           <div class="error-message" if:true={inputerrorMessage}>{inputerrorMessage}</div>
+                        </template>
+                        <div class="error-message" if:true={inputerrorMessage}>{inputerrorMessage}</div>
+                        <template if:true={showScheduleAndAttachment}>
+                           <div class="pill-container">
+                              <template for:each={stagedAttachments} for:item="value">
+                                 <span key={value.key}>
+                                    <lightning-pill label={value.filename} class="slds-m-around_x-small slds-pill"
+                                       data-id={value.dataId} name={value.filename} onremove={removeFilesPill}
+                                       style="border: none">
+                                       <lightning-icon icon-name="utility:image" alternative-text="Attachment"></lightning-icon>
+                                    </lightning-pill>
+                                 </span>
+                              </template>
+                           </div>
+                        </template>
+                     </div>
+                     <div class="icon-ai-wrapper">
+                        <!-- <div class="dropdown-container">
+                        <div class="sms-icon" if:true={smsOption} onclick={toggleDropdown}>
+                           <lightning-icon icon-name="standard:sms" size="medium" alternative-text="SMS Options"
+                              title="SMS">
+                           </lightning-icon>
+                        </div>
+                        <div class="sms-icon" if:true={whatsAppOption} onclick={toggleDropdown}>
+                           <img src={whatsappIconUrl} class="whatsApp-icon" alt="WhatsApp Icon" />
+                        </div>
+                        <div class="dropdown-trigger" onclick={toggleDropdown}>
+                           <lightning-icon icon-name={dropdownIcon} class="dropdown-symbol" size="xx-small"
+                              alternative-text="Dropdown" title="Select a channel"></lightning-icon>
+                        </div>
+                        <div class="dropdown" onclick={stopPropagation}>
+                           <div class={dropdownClass}>
+                              <div class="dropdown-option" onclick={handleOptionSelection}
+                                 style="border-bottom: 0.4px solid #b3b3b3;">
+                                 <img src={smsIconUrl} class="sms-option-icon" alt="WhatsApp Icon" />
+                                 <h2 class="Option-text">{label.OPTION_SMS_LABEL}</h2>
+                              </div>
+                              <div class="dropdown-option" onclick={handleOptionSelection}>
+                                 <img src={whatsappIconUrl} class="whatsApp-option-icon" alt="WhatsApp Icon" />
+                                 <h2 class="Option-text">{label.OPTION_WHATSAPP_LABEL}</h2>
+                              </div>
+                           </div>
+                        </div>
+                     </div> -->
+                        <div class="einstein-toggle-wrapper">
+                           <template if:true={showEinsteinMenu}>
+                              <div class="einstein-dropup-menu">
+                                 <div class="einstein-menu-bg">
+                                    <div class="einstein-menu-item">
+                                       <button class="einstein-menu-btn" title="Reframe">
+                                          <!-- Your icon here -->
+                                          <lightning-icon icon-name="utility:new_direct_message"
+                                             class="Einsteinmenu-icon" onclick={handleEinsteinReframe}
+                                             size="xx-small"></lightning-icon>
+                                       </button>
+                                       <span class="einstein-label" onclick={handleEinsteinReframe}>Reframe</span>
+                                    </div>
+                                    <div class="einstein-menu-item">
+                                       <button class="einstein-menu-btn" title="AI Summary">
+                                          <lightning-icon icon-name="utility:summary" class="Einsteinmenu-icon"
+                                             onclick={handleEinsteinSummary} size="xx-small"></lightning-icon>
+                                       </button>
+                                       <span class="einstein-label" onclick={handleEinsteinSummary}>AI Summary</span>
+                                    </div>
+                                    <div class="einstein-menu-item">
+                                       <button class="einstein-menu-btn" title="AI Suggestion">
+                                          <lightning-icon icon-name="utility:light_bulb" class="Einsteinmenu-icon"
+                                             onclick={handleEinsteinSuggestion} size="xx-small"></lightning-icon>
+                                       </button>
+                                       <span class="einstein-label" onclick={handleEinsteinSuggestion}>AI
+                                          Suggestion</span>
+                                    </div>
+                                    <div class="einstein-menu-item">
+                                       <button class="einstein-menu-btn" onclick={toggleEinsteinMenu} title="Close">
+                                          <lightning-icon icon-name="utility:close" class="Einsteinmenu-icon"
+                                             size="xx-small"></lightning-icon>
+                                       </button>
+                                       <span class="einstein-label" onclick={toggleEinsteinMenu}>Close</span>
+                                    </div>
+                                 </div>
+                              </div>
+                           </template>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </template>
+            <template if:false={isMobile}>
+               <div class="icon-input">
+                  <div class="footer-group footer-group-1">
+                     <template if:false={hideUtilityBarElements}>
+                        <div class="icon-wrapper" onclick={showTemplates}>
+                           <lightning-icon icon-name="action:follow" size="small" alternative-text="Schedule Message"
+                              title="Select a Template">
+                           </lightning-icon>
+                        </div>
+                        <template if:true={showScheduleAndAttachment}>
+                           <div class="icon-wrapper" onclick={selectFileModal}>
+                              <lightning-icon icon-name="standard:attach" size="medium" alternative-text="Add File"
+                                 title="Add File" class="File-icon"></lightning-icon>
+                           </div>
+                        </template>
+                     </template>
+                  </div>
+                  <div class="footer-group footer-group-2">
+                     <div class="input-wrapper">
+                     <lightning-combobox value={selectedPhoneField} options={phoneFieldOptions}
+                        onchange={handlePhoneFieldChange} variant="label-hidden" dropdown-alignment="bottom-left"
+                        class="phone-field-dropdown phone-input" aria-label="Select Phone Field"></lightning-combobox>
+                     <lightning-textarea class="chat-input" type="text" value={messageText}
+                        placeholder="Type a message..." onchange={handleMessageInputChange} onkeydown={handleKeyPress}
+                        variant="bare">
+                     </lightning-textarea>
+                     <template if:true={limitMessage}>
+                        Characters ({characterLength} / 500)
+                     </template>
+                     <div class="error-message" if:true={inputerrorMessage}>{inputerrorMessage}</div>
+
+                     <template if:false={hideUtilityBarElements}>
+                        <template if:true={showScheduleAndAttachment}>
+                           <div class="pill-container">
+                              <template for:each={stagedAttachments} for:item="value">
+                                 <span key={value.key}>
+                                    <lightning-pill label={value.filename} class="slds-m-around_x-small slds-pill"
+                                       data-id={value.dataId} name={value.filename} onremove={removeFilesPill}
+                                       style="border: none">
+                                       <lightning-icon icon-name="utility:image" alternative-text="Attachment"></lightning-icon>
+                                    </lightning-pill>
+                                 </span>
+                              </template>
+                           </div>
+                        </template>
+                     </template>
+                  </div>
+                  </div>
+                  <div class="footer-group footer-group-3">
+                     <div class="icon-ai-wrapper">
+                        <div class="dropdown-container">
+                        <div class="sms-icon" if:true={showSmsTriggerIcon} onclick={toggleDropdown}>
+                           <lightning-icon icon-name="standard:sms" size="medium" alternative-text="SMS Options"
+                              title="SMS">
+                           </lightning-icon>
+                        </div>
+                        <div class="sms-icon" if:true={showWhatsAppTriggerIcon} onclick={toggleDropdown}>
+                           <img src={whatsappIconUrl} class="whatsApp-icon" alt="WhatsApp Icon" />
+                        </div>
+                        <div class="dropdown-trigger" onclick={toggleDropdown}>
+                           <lightning-icon icon-name={dropdownIcon} class="dropdown-symbol" size="x-small"
+                              alternative-text="Dropdown" title="Select a channel"></lightning-icon>
+                        </div>
+                        
+                        <div class="dropdown" onclick={stopPropagation}>
+                           <div class={dropdownClass}>
+                              <!-- <template if:true={showSelectChannelOption}>
+                                 <div class="dropdown-option" onclick={handleOptionSelection}
+                                    style="border-bottom: 0.4px solid #b3b3b3;">
+                                    <h2 class="Option-text">{label.SELECT_CHANNEL_LABEL}</h2>
+                                 </div>
+                              </template> -->
+                              <template if:true={smsOption}>
+                                 <div class={smsOptionBorderClass} onclick={handleOptionSelection}>
+                                    <img src={smsIconUrl} class="sms-option-icon" alt="SMS Icon" />
+                                    <h2 class="Option-text">{label.OPTION_SMS_LABEL}</h2>
+                                 </div>
+                              </template>
+                              <template if:true={whatsAppOption}>
+                                 <div class="dropdown-option" onclick={handleOptionSelection}>
+                                    <img src={whatsappIconUrl} class="whatsApp-option-icon" alt="WhatsApp Icon" />
+                                    <h2 class="Option-text">{label.OPTION_WHATSAPP_LABEL}</h2>
+                                 </div>
+                              </template>
+                           </div>
+                        </div>
+                     </div>
+                     </div>
+                     <template if:false={hideUtilityBarElements}>
+                        <template if:true={showScheduleAndAttachment}>
+                           <div class="icon-wrapper" onclick={showSchedule}>
+                              <lightning-icon icon-name="standard:shift_scheduling_operation" size="medium"
+                                 title="Schedule a message" alternative-text="Schedule"></lightning-icon>
+                              <template if:true={showSchedulePopup}>
+                                 <div class="scheduling-popup" onclick={stopPropagation}>
+                                    <div class="schedule-head">
+                                       <h1>{label.SEND_THIS_MESSAGE_ON_LABEL}</h1>
+                                    </div>
+                                    <div class="date-picker">
+                                       <lightning-input type="date" label="Select Date" value={selectedDate} min={minDate}
+                                          onchange={handleDateChange}>
+                                       </lightning-input>
+                                    </div>
+                                    <div class="time-picker">
+                                       <lightning-input type="time" label="Select Time" value={selectedTime} min={minTime}
+                                          onfocus={handleTime} onchange={handleTimeChange} disabled={isTimeDisabled}>
+                                       </lightning-input>
+                                       <br>
+                                    </div>
+                                    <div class="error-message" if:true={errorMessage}>{errorMessage}</div>
+                                    <div class="continue-button">
+                                       <button label="Continue" class="slds-button_stretch slds-size_10-of-12 continue-btn"
+                                          onclick={handleContinue}>
+                                          <span class="continue-label">
+                                             {label.SCHEDULE_LABEL}
+                                          </span>
+                                       </button>
+                                    </div>
+                                 </div>
+                              </template>
+                           </div>
+                        </template>
+                     </template>
+                     <div class="icon-wrapper send" onclick={handleSendButtonClick}>
+                        <lightning-icon icon-name="utility:send" class={sendButtonClass} alternative-text="Send"
+                           title="Send a Message" size="small"></lightning-icon>
+                     </div>
+                  </div>
+                  <!--<div class="einstein-toggle-wrapper">
+                        <button class={einsteinToggleClass} onclick={toggleEinsteinMenu} title="Toggle Einstein AI">
+                           <img src={agentForceIconUrl} alt="Einstein AI" class="einstein-icon" />
+                           <span class="einstein-indicator"></span>
+                        </button>
+                        <template if:true={showEinsteinMenu}>
+                           <div class="einstein-dropup-menu">
+                              <div class="einstein-menu-bg">
+                                 <div class="einstein-menu-item">
+                                    <button class="einstein-menu-btn" title="Reframe">
+                                       <lightning-icon icon-name="utility:new_direct_message" class="Einsteinmenu-icon"
+                                          onclick={handleEinsteinReframe} size="xx-small"></lightning-icon>
+                                    </button>
+                                    <span class="einstein-label" onclick={handleEinsteinReframe}>Reframe</span>
+                                 </div>
+                                 <div class="einstein-menu-item">
+                                    <button class="einstein-menu-btn" title="AI Summary">
+                                       <lightning-icon icon-name="utility:summary" class="Einsteinmenu-icon"
+                                          onclick={handleEinsteinSummary} size="xx-small"></lightning-icon>
+                                    </button>
+                                    <span class="einstein-label" onclick={handleEinsteinSummary}>AI Summary</span>
+                                 </div>
+                                 <div class="einstein-menu-item">
+                                    <button class="einstein-menu-btn" title="AI Suggestion">
+                                       <lightning-icon icon-name="utility:light_bulb" class="Einsteinmenu-icon"
+                                          onclick={handleEinsteinSuggestion} size="xx-small"></lightning-icon>
+                                    </button>
+                                    <span class="einstein-label" onclick={handleEinsteinSuggestion}>AI Suggestion</span>
+                                 </div>
+                                 <div class="einstein-menu-item">
+                                    <button class="einstein-menu-btn" onclick={toggleEinsteinMenu} title="Close">
+                                       <lightning-icon icon-name="utility:close" class="Einsteinmenu-icon"
+                                          size="xx-small"></lightning-icon>
+                                    </button>
+                                    <span class="einstein-label" onclick={toggleEinsteinMenu}>Close</span>
+                                 </div>
+                              </div>
+                           </div>
+                        </template>
+                     </div>
+                  -->
+                  
+               </div>
+            </template>
+            <template if:true={isMobile}>
+               <div style="padding-right: 10px;" class="sms-drop-down">
+                  <div class="dropdown-container">
+                     <div class="sms-icon" if:true={showSmsTriggerIcon} onclick={toggleDropdown}>
+                        <lightning-icon icon-name="standard:sms" size="medium" alternative-text="SMS Options"
+                           title="SMS">
+                        </lightning-icon>
+                     </div>
+                     <div class="sms-icon" if:true={showWhatsAppTriggerIcon} onclick={toggleDropdown}>
+                        <img src={whatsappIconUrl} class="whatsApp-icon" alt="WhatsApp Icon" />
+                     </div>
+                     <div class="dropdown-trigger" onclick={toggleDropdown}>
+                        <lightning-icon icon-name={dropdownIcon} class="dropdown-symbol" size="xx-small"
+                           alternative-text="Dropdown" title="Select a channel"></lightning-icon>
+                     </div>
+                     <div class="dropdown" onclick={stopPropagation}>
+                        <div class={dropdownClass}>
+                           <template if:true={showSelectChannelOption}>
+                              <div class="dropdown-option" onclick={handleOptionSelection}
+                                 style="border-bottom: 0.4px solid #b3b3b3;">
+                                 <h2 class="Option-text">{label.SELECT_CHANNEL_LABEL}</h2>
+                              </div>
+                           </template>
+                           <template if:true={smsOption}>
+                              <div class={smsOptionBorderClass} onclick={handleOptionSelection}>
+                                 <img src={smsIconUrl} class="sms-option-icon" alt="SMS Icon" />
+                                 <h2 class="Option-text">{label.OPTION_SMS_LABEL}</h2>
+                              </div>
+                           </template>
+                           <template if:true={whatsAppOption}>
+                              <div class="dropdown-option" onclick={handleOptionSelection}>
+                                 <img src={whatsappIconUrl} class="whatsApp-option-icon" alt="WhatsApp Icon" />
+                                 <h2 class="Option-text">{label.OPTION_WHATSAPP_LABEL}</h2>
+                              </div>
+                           </template>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </template>
+         </div>
+         <!-- <template if:true={aiBriefReply}>
+            <div class="brief-reply-container">
+                <button class="brief-reply-btn" onclick={handleBriefReplyClick}>
+                    <pre>{aiBriefReply}</pre>
+                </button>
+            </div>
+            </template> -->
+      </template>
+   </div>
+   <template if:false={isMobile}>
+      <template if:true={openFileModal}>
+         <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container upload-desktop">
+               <header class="slds-modal__header">
+                  <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close">
+                     <lightning-icon icon-name="utility:close" alternative-text="close" size="small"
+                        onclick={closeFileModal}></lightning-icon>
+                     <span class="slds-assistive-text">close</span>
+                  </button>
+                  <h2 class="slds-text-heading_medium">Add Files with Message!</h2>
+               </header>
+               <div class="slds-modal__content slds-p-around_medium">
+                  <!-- TOGGLE BUTTONS -->
+                  <template if:true={isWhatsAppSelected}>
+                     <div class="slds-m-bottom_medium slds-align_absolute-center">
+                        <lightning-button-group>
+                           <lightning-button variant={uploadBtnVariant} label="Upload File"
+                              onclick={showFileUpload}></lightning-button>
+                           <lightning-button variant={urlBtnVariant} label="Enter URL"
+                              onclick={showUrlInput}></lightning-button>
+                        </lightning-button-group>
+                     </div>
+                  </template>
+                  <!-- Upload Option -->
+                  <template if:true={showFileUploadSection}>
+                     <lightning-input name="AddFile" label="Attach File" type="file" accept=".png"
+                        onchange={handleFileUploaded}> </lightning-input>
+                     <template if:true={fileNameError}>
+                        <p class="slds-text-color_error">File Name is required.</p>
+                     </template>
+                     <template if:true={fileError}>
+                        <p class="slds-text-color_error">{fileError}</p>
+                     </template>
+                     <template if:true={fileName}>
+                        <span style="font-weight: 600;padding: 5px">{fileName}</span>
+                     </template>
+                  </template>
+
+                  <!-- URL Option -->
+                  <template if:true={showUrlInputSection}>
+                     <lightning-input label="Public Media URL" value={mediaUrl} data-id="mediaUrlInput"
+                        placeholder="e.g. https://example.com/photo.jpg"
+                        onchange={handleMediaMessageUrlChange} required></lightning-input>
+                     <template if:true={mediaUrlError}>
+                        <p class="slds-text-color_error">Valid URL is required.</p>
+                     </template>
+                  </template>
+               </div>
+               <!-- <lightning-input name="AddFile" label="Attach File" type="file" accept=".png"
+                     onchange={handleFileUploaded}>
+                  </lightning-input>
+                  <template if:true={fileError}>
+                     <span class="slds-required">{fileError}</span>
+                  </template>
+                  <template if:true={fileName}>
+                     <span style="font-weight: 600;padding: 5px">{fileName}</span>
+                  </template> -->
+
+               <footer class="slds-modal__footer">
+                  <lightning-button variant="neutral" label="Cancel" onclick={closeFileModal}></lightning-button>
+                  <lightning-button variant="brand" label="Upload" onclick={handleUploadMediaButtonClick}
+                     style="margin-left:20px">
+                  </lightning-button>
+               </footer>
+            </div>
+         </section>
+         <div class="slds-backdrop slds-backdrop_open"></div>
+      </template>
+   </template>
+   <template if:true={summaryModal}>
+      <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+         <div class="slds-modal__container">
+            <header class="slds-modal__header">
+               <h2 class="slds-modal__title">AI Summary</h2>
+            </header>
+            <div class="slds-modal__content slds-p-around_medium" id="modal-content">
+               <lightning-formatted-rich-text value={conversationSummary}>
+               </lightning-formatted-rich-text>
+            </div>
+            <footer class="slds-modal__footer">
+               <lightning-button variant="neutral" label="Close" class="slds-p-left_small" onclick={closeSummaryModal}>
+               </lightning-button>
+               <lightning-button variant="brand" label="Copy" class="slds-p-left_small" onclick={copyToClipboard}>
+               </lightning-button>
+            </footer>
+         </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open"></div>
+   </template>
+   </template>
+   <!-- </template> -->
+</template>

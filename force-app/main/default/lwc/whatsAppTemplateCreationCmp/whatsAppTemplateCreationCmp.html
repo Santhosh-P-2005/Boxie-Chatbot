@@ -1,0 +1,657 @@
+<template>
+	<lightning-card>
+		<template if:true={isLoading}>
+			<div class="exampleHolder">
+				<lightning-spinner alternative-text="Loading" size="Medium"></lightning-spinner>
+
+			</div> 
+		</template>
+		<template if:true={initialTemplate}>
+			<section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small"
+				aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+				<div class="slds-modal__container modal-container">
+					<button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse">
+						<lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
+							size="small" onclick={handleClose}></lightning-icon>
+						<span class="slds-assistive-text">Close</span>
+
+					</button>
+					<div class="slds-modal__header">
+						<h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate" tabindex="-1">{cardTitle}
+						</h1>
+					</div>
+
+					<div class="slds-modal__content slds-p-around_medium modal ">
+						<div class="slds-grid slds-grid_pull-padded-medium manual-ai-flex">
+							<div class="slds-col col-container">
+								<div class="slds-p-around_large">
+									<div class={smsBoxClass} onclick={handleBoxClick} data-label="SMS">
+										<div class="manual">
+											<div class="manual-tick">
+												<template if:true={isSmsTick}>
+													<lightning-icon icon-name="utility:check" class="tick-icon"
+														size="small" alternative-text="Approved"
+														title="Approved"></lightning-icon>
+												</template>
+											</div>
+											<div class={smsBoxWrapperClass} tabindex="0" data-label="SMS"
+												onkeydown={handleKeyDown}>
+												<div class="slds-col slds-size_1-of-3 manual-icon">
+													<lightning-icon icon-name="standard:sms" size="large"
+														alternative-text="SMS" title="SMS"></lightning-icon>
+												</div>
+												<div class="slds-col slds-size_2-of-3 manual-text">
+													<div class="text">
+														SMS
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="slds-col ">
+								<div class="slds-p-around_large ai-position-left">
+									<div class={whatsAppBoxClass} onclick={handleBoxClick} data-label="WhatsApp">
+										<div class="ai">
+											<div class="ai-tick">
+												<template if:true={isWhatsAppTick}>
+													<lightning-icon icon-name="utility:check" class="tick-icon"
+														size="small" alternative-text="Approved"
+														title="Approved"></lightning-icon>
+												</template>
+											</div>
+											<div class={whatsAppBoxWrapperClass} tabindex="0" data-label="WhatsApp"
+												onkeydown={handleKeyDown}>
+												<div class="slds-col slds-size_1-of-3 ai-icon">
+													<lightning-icon icon-name="utility:chat" size="large"
+														alternative-text="WhatsApp" title="WhatsApp"></lightning-icon>
+												</div>
+												<div class="slds-col slds-size_2-of-3 ai-text">
+													<div class="text AI-text">
+														WhatsApp
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- <footer class="slds-modal__footer">
+						<button class="slds-button slds-button_brand" onclick={handleOK}>OK</button>
+					</footer> -->
+				</div>
+			</section>
+			<div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+		</template>
+		<template if:true={showSmsForm}>
+			<div class="slds-modal__header">
+				<h1 id="modal-heading-03" class="slds-modal__title slds-hyphenate" tabindex="-1">{cardTitle}</h1>
+			</div>
+			<div class="template-form slds-p-around_medium">
+				<div class="section-block slds-m-bottom_medium">
+					<div class="section-header-block">
+						<span class="section-header">
+							<lightning-icon icon-name="utility:record" alternative-text="" size="x-small" class="section-icon"></lightning-icon>
+							<span class="section-title-text">Template details</span>
+						</span>
+					</div>
+					<div class="section-content-block">
+						<div class="details-row slds-grid slds-gutters slds-wrap">
+							<div class="details-col slds-col slds-size_1-of_1 slds-medium-size_6-of-12">
+								<lightning-input type="text" label="Template Name" data-name="templateName" value={templateData.templateName}
+									onchange={handleChange} placeholder="e.g. Welcome Message"></lightning-input>
+							</div>
+							<div class="details-col slds-col slds-size_1-of_1 slds-medium-size_6-of-12">
+								<lightning-combobox name="objectName" label="Object Name" value={templateData.objectName}
+									placeholder="Select Object" options={objectOptions} data-name="objectName"
+									onchange={handleChange}></lightning-combobox>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="slds-divider slds-m-vertical_small"></div>
+				<div class="section-block slds-m-bottom_medium">
+					<div class="section-header-block">
+						<span class="section-header">
+							<lightning-icon icon-name="utility:richtext" alternative-text="" size="x-small" class="section-icon"></lightning-icon>
+							<span class="section-title-text">Body</span>
+						</span>
+					</div>
+					<div class="section-content-block">
+						<p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small section-desc">Enter the text for your message. Use "Insert merge field" to add placeholders like &#123;!Name&#125; that are replaced when the template is sent.</p>
+						<div class="body-input-wrap">
+							<lightning-textarea name="bodyText" variant="label-hidden" label="Body Text"
+								data-name="bodyText" onchange={handleChange} value={templateData.bodyText}
+								class="body-textarea" placeholder="Enter message body"></lightning-textarea>
+							<div class="merge-field-actions slds-m-top_x-small">
+								<lightning-button-menu alternative-text="Merge field" label="Insert merge field" icon-name="utility:insert_template" onselect={handleMenuSelect}>
+									<template for:each={fieldOptions} for:item="fld">
+										<lightning-menu-item key={fld.value} value={fld.value} label={fld.label}></lightning-menu-item>
+									</template>
+								</lightning-button-menu>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div slot="footer" class="card-footer slds-p-horizontal_medium slds-p-vertical_medium">
+				<lightning-button label="Cancel" variant="neutral" onclick={handleClose} class="slds-m-right_x-small"></lightning-button>
+				<lightning-button label="Save" variant="brand" onclick={handleSave} title="Save template"></lightning-button>
+			</div>
+		</template>
+		<template if:true={showSmsFormRemoveHeaderBodyFooterButtons}>
+					<lightning-layout-item size="12" padding="around-medium" if:true={isWhatsApp}>
+						<div
+							style="background: #F7F7F7; border-radius: 8px; border: 1px #EFEFEF solid;padding:20px;padding-top:14px;">
+							<div style="color: black; font-size: 18px; font-weight: 700; word-wrap: break-word">Header
+							</div>
+							<div
+								style="color: #222222; font-size: 12px; word-wrap: break-word;padding-top:2px; display: flex;">
+								Add a title or choose which type of media you’ll use for this header.
+								<lightning-helptext
+									content="Please note: The file you upload here is a placeholder and will be used for preview purposes only. When sending the template to customers, make sure to include the actual media file as a link. The maximum allowed size for media file for the preview purpose is 2MB."
+									style="margin-left: 10px;"></lightning-helptext>
+							</div>
+							<lightning-layout>
+								<lightning-layout-item size="2">
+									<lightning-combobox class="header-input" name="header" label="Header"
+										style="padding-top:10px;" variant="label-hidden" value={templateData.header}
+										placeholder="Select Progress" options={headerOptions} data-name="header"
+										onchange={handleChange}></lightning-combobox>
+								</lightning-layout-item>
+								<lightning-layout-item size="10">
+									<div if:true={isShowHeaderText}>
+										<lightning-input style="padding-top:10px;padding-left:20px;" type="text"
+											variant="label-hidden" label="Header Text" data-name="headerText"
+											onchange={handleChange} value={templateData.headerText}
+											class="header-input-text"></lightning-input>
+									</div>
+									<div if:true={isShowHeaderMedia} style="display: flex; gap: 50px;"
+										class="header-input-container">
+										<lightning-input style="padding-top:10px; padding-left:20px;" type="file"
+											variant="label-hidden" label="Upload File" onchange={handleFilesChange}
+											class="header-input-upload"></lightning-input>
+										<lightning-helptext content={headerHelpText}
+											class="help-text"></lightning-helptext>
+										<template if:true={fileSizeWarning}>
+											<p class="slds-text-color_error slds-p-horizontal_small">{fileSizeWarning}
+											</p>
+										</template>
+										<template if:true={fileName}>
+											<h2 class="upload-text upl-txt-1">Uploaded File: <b>{fileName}</b></h2>
+										</template>
+									</div>
+									<template if:true={fileName}>
+										<h2 class="upload-text upl-txt-2">Uploaded File: <b>{fileName}</b></h2>
+									</template>
+								</lightning-layout-item>
+							</lightning-layout>
+						</div>
+					</lightning-layout-item>
+					<lightning-layout-item size="12" padding="around-medium">
+						<div
+							style="background: #F7F7F7; border-radius: 8px; border: 1px #EFEFEF solid;padding:20px;padding-top:14px;">
+							<div style="color: black; font-size: 18px; font-weight: 700; word-wrap: break-word">Body
+							</div>
+							<div style="color: #222222; font-size: 12px; word-wrap: break-word;padding-top:2px;">Enter
+								the
+								text
+								for your message in the language that you've selected.</div>
+
+							<div style="padding-top:10px;">
+								<lightning-textarea name="Body Text" variant="label-hidden" label="Body Text"
+									data-name="bodyText" onchange={handleChange} value={templateData.bodyText}>
+								</lightning-textarea>
+								<div style="padding-top:10px; text-align: end;">
+									<lightning-button-menu alternative-text="Show menu" label="Merge Field"
+										onselect={handleMenuSelect}>
+										<template for:each={fieldOptions} for:item="fld">
+											<lightning-menu-item value={fld.value} label={fld.label} key={fld.value}>
+											</lightning-menu-item>
+										</template>
+									</lightning-button-menu>
+								</div>
+							</div>
+						</div>
+					</lightning-layout-item>
+					<lightning-layout-item size="12" padding="around-medium" if:true={isWhatsApp}>
+						<div
+							style="background: #F7F7F7; border-radius: 8px; border: 1px #EFEFEF solid;padding:20px;padding-top:14px;">
+							<div style="color: black; font-size: 18px; font-weight: 700; word-wrap: break-word">Footer
+							</div>
+							<div style="color: #222222; font-size: 12px; word-wrap: break-word;padding-top:2px;">Add a
+								short
+								line of text to the bottom of your message template.</div>
+							<div style="padding-top:10px;">
+								<lightning-input variant="label-hidden" type="text" label="Footer Text"
+									data-name="footerText" onchange={handleChange} value={templateData.footerText}>
+								</lightning-input>
+							</div>
+						</div>
+					</lightning-layout-item>
+					<lightning-layout-item size="12" padding="around-medium" if:true={isWhatsApp}>
+						<div
+							style="background: #F7F7F7; border-radius: 8px; border: 1px #EFEFEF solid;padding:20px;padding-top:14px;">
+							<div style="color: black; font-size: 18px; font-weight: 700; word-wrap: break-word">Buttons
+							</div>
+							<div style="color: #222222; font-size: 12px; word-wrap: break-word;padding-top:2px;">Create
+								buttons
+								that let customers respond to your message or take action.</div>
+							<lightning-button-menu alternative-text="Show menu" label="Add a button"
+								onselect={handleButtonMenuSelect} style="padding-top:10px;">
+								<lightning-menu-subheader label="Quick Reply Buttons"></lightning-menu-subheader>
+								<lightning-menu-item value="custom" label="Custom">
+								</lightning-menu-item>
+								<lightning-menu-subheader label="Call to action Buttons"></lightning-menu-subheader>
+								<lightning-menu-item value="website" label="Visit website"></lightning-menu-item>
+								<lightning-menu-item value="phoneNumber"
+									label="Call Phone Number"></lightning-menu-item>
+								<!-- <lightning-menu-item value="offerCode" label="Copy offer code"></lightning-menu-item> -->
+							</lightning-button-menu>
+							is Show button : {isShowButtons}
+							<div style="padding-top:25px;" if:true={isShowButtons}>
+								isShowQuickReply : {isShowQuickReply} 
+								<div if:true={isShowQuickReply}>
+									<div
+										style="color: black; font-size: 16px; font-weight: 700; word-wrap: break-word;">
+										Quick
+										reply
+									</div>
+									<div class="customBtn-error">
+										<lightning-icon icon-name="utility:warning" alternative-text="warning"
+											size="xx-small" class="warning-icon">
+										</lightning-icon> Custom Button limit exceeded
+									</div>
+									Data : {data} , template buttons : {templateData.buttons}
+									<template if:true={data} for:each={templateData.buttons} for:item="button"
+										for:index="indx">
+										<div if:true={isShowQuickReply} key={button.text} style="padding-top:10px;">
+											button : {button} 
+											<c-whats-app-template-button-cmp button-data={button} indx={indx}
+												customcount={customButtonCount} onbuttonclose={handleChangeButtonText}
+												onbuttondata={handleButtonData}>
+											</c-whats-app-template-button-cmp>
+										</div>
+									</template>
+								</div>
+								<div if:true={isShowCalltoAction} style="padding-top:20px;">
+									<div
+										style="color: black; font-size: 16px; font-weight: 700; word-wrap: break-word;">
+										Call to
+										action</div>
+									<div class="websiteBtn-error">
+										<lightning-icon icon-name="utility:warning" alternative-text="warning"
+											size="xx-small" class="warning-icon">
+										</lightning-icon> You can add upto only one Website
+									</div>
+
+									<div class="phoneBtn-error">
+										<lightning-icon icon-name="utility:warning" alternative-text="warning"
+											size="xx-small" class="warning-icon">
+										</lightning-icon> You can add upto only one Website
+									</div>
+									<div class="allBtn-error">
+										<lightning-icon icon-name="utility:warning" alternative-text="warning"
+											size="xx-small" class="warning-icon">
+										</lightning-icon> All Button limit execeeded
+									</div>
+									<template for:each={templateData.buttons} for:item="button" for:index="indx">
+										<div if:false={button.isQuickReply} key={button.text} style="padding-top:10px;">
+
+											<c-whats-app-template-button-cmp button-data={button} indx={indx}
+												websitebutton={websiteButtonCount} phonebutton={phoneNumberButtonCount}
+												onphonebutton={handlePhonebuttonCount}
+												onwebsitebutton={handleWebsitebuttonCount}
+												onbuttonclose={handleChangeButtonText} onbuttondata={handleButtonData}>
+											</c-whats-app-template-button-cmp>
+										</div>
+									</template>
+								</div>
+							</div>
+						</div>
+					</lightning-layout-item>
+				</lightning-layout>
+			</div>
+			<div slot="footer" class="card-footer slds-p-horizontal_medium slds-p-vertical_medium">
+				<lightning-button label="Cancel" variant="neutral" onclick={handleClose} class="slds-m-right_x-small"></lightning-button>
+				<lightning-button label="Save" variant="brand" onclick={handleSave} title="Save template"></lightning-button>
+			</div>
+		</template>
+		<template if:true={showMetaForm}>
+			<div class="slds-modal__header">
+				<h1 class="slds-modal__title slds-hyphenate" tabindex="-1">{cardTitle}</h1>
+			</div>
+			<div class="template-form slds-p-around_medium">
+				<div class="section-block slds-m-bottom_medium">
+					<div class="section-header-block">
+						<span class="section-header">
+							<lightning-icon icon-name="utility:record" alternative-text="" size="x-small" class="section-icon"></lightning-icon>
+							<span class="section-title-text">Template details</span>
+						</span>
+					</div>
+					<div class="section-content-block">
+						<div class="details-row slds-grid slds-gutters slds-wrap">
+							<div class="details-col slds-col slds-size_1-of_1 slds-medium-size_6-of-12">
+								<lightning-input type="text" label="Template Name" data-name="templateName" value={templateData.templateName}
+									onchange={handleChange} placeholder="e.g. Welcome Message"></lightning-input>
+							</div>
+							<div class="details-col slds-col slds-size_1-of_1 slds-medium-size_6-of-12">
+								<lightning-combobox name="objectName" label="Object Name" value={templateData.objectName}
+									placeholder="Select Object" options={objectOptions} data-name="objectName"
+									onchange={handleChange}></lightning-combobox>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="slds-divider slds-m-vertical_small"></div>
+				<div class="section-block slds-m-bottom_medium">
+					<div class="section-header-block">
+						<span class="section-header">
+							<lightning-icon icon-name="utility:text" alternative-text="" size="x-small" class="section-icon"></lightning-icon>
+							<span class="section-title-text">Header</span>
+						</span>
+					</div>
+					<div class="section-content-block">
+						<div class="slds-text-body_small slds-text-color_weak slds-m-bottom_small section-desc section-desc-inline">
+							<span>Add a title or choose which type of media you'll use for this header.</span>
+							<lightning-helptext
+								content="Please note: The file you upload here is a placeholder and will be used for preview purposes only. When sending the template to customers, make sure to include the actual media file as a link. The maximum allowed size for media file for the preview purpose is 2MB."
+								class="section-helptext"></lightning-helptext>
+						</div>
+						<div class="header-fields-wrap">
+							<lightning-combobox class="header-input" name="header" label="Header"
+								variant="label-hidden" value={templateData.header}
+								placeholder="Select Progress" options={headerOptions} data-name="header"
+								onchange={handleChange}></lightning-combobox>
+							<div if:true={isShowHeaderText} class="header-text-wrap">
+								<lightning-input type="text" variant="label-hidden" label="Header Text" data-name="headerText"
+									onchange={handleChange} value={templateData.headerText}
+									class="header-input-text" placeholder="Header text"></lightning-input>
+							</div>
+							<div if:true={isShowHeaderMedia} class="header-input-container">
+								<lightning-input type="file" variant="label-hidden" label="Upload File" onchange={handleFilesChange}
+									class="header-input-upload"></lightning-input>
+								<lightning-helptext content={headerHelpText} class="help-text"></lightning-helptext>
+								<template if:true={fileSizeWarning}>
+									<p class="slds-text-color_error slds-p-horizontal_small">{fileSizeWarning}</p>
+								</template>
+								<template if:true={fileName}>
+									<h2 class="upload-text upl-txt-1">Uploaded File: <b>{fileName}</b></h2>
+								</template>
+							</div>
+							<template if:true={fileName}>
+								<h2 class="upload-text upl-txt-2">Uploaded File: <b>{fileName}</b></h2>
+							</template>
+						</div>
+					</div>
+				</div>
+				<div class="slds-divider slds-m-vertical_small"></div>
+				<div class="section-block slds-m-bottom_medium">
+					<div class="section-header-block">
+						<span class="section-header">
+							<lightning-icon icon-name="utility:richtext" alternative-text="" size="x-small" class="section-icon"></lightning-icon>
+							<span class="section-title-text">Body</span>
+						</span>
+					</div>
+					<div class="section-content-block">
+						<p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small section-desc">Enter the text for your message in the language that you've selected.</p>
+						<div class="body-input-wrap">
+							<lightning-textarea name="bodyText" variant="label-hidden" label="Body Text"
+								data-name="bodyText" onchange={handleChange} value={templateData.bodyText}
+								class="body-textarea" placeholder="Enter message body"></lightning-textarea>
+							<div class="merge-field-actions slds-m-top_x-small">
+								<lightning-button-menu alternative-text="Merge field" label="Insert merge field" icon-name="utility:insert_template" onselect={handleMenuSelect}>
+									<template for:each={fieldOptions} for:item="fld">
+										<lightning-menu-item key={fld.value} value={fld.value} label={fld.label}></lightning-menu-item>
+									</template>
+								</lightning-button-menu>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="slds-divider slds-m-vertical_small"></div>
+				<div class="section-block slds-m-bottom_medium">
+					<div class="section-header-block">
+						<span class="section-header">
+							<lightning-icon icon-name="utility:richtext_bullet_list" alternative-text="" size="x-small" class="section-icon"></lightning-icon>
+							<span class="section-title-text">Footer</span>
+						</span>
+					</div>
+					<div class="section-content-block">
+						<p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small section-desc">Add a short line of text to the bottom of your message template.</p>
+						<div class="body-input-wrap">
+							<lightning-input variant="label-hidden" type="text" label="Footer Text"
+								data-name="footerText" onchange={handleChange} value={templateData.footerText}
+								placeholder="Footer text"></lightning-input>
+						</div>
+					</div>
+				</div>
+				<div class="slds-divider slds-m-vertical_small"></div>
+				<div class="section-block slds-m-bottom_medium">
+					<div class="section-header-block">
+						<span class="section-header">
+							<lightning-icon icon-name="utility:list" alternative-text="" size="x-small" class="section-icon"></lightning-icon>
+							<span class="section-title-text">Buttons</span>
+						</span>
+					</div>
+					<div class="section-content-block">
+						<p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small section-desc">Create buttons that let customers respond to your message or take action.</p>
+						<div class="merge-field-actions slds-m-bottom_small">
+							<lightning-button-menu alternative-text="Show menu" label="Add a button"
+								onselect={handleButtonMenuSelect} icon-name="utility:add" icon-position="left">
+								<lightning-menu-subheader label="Quick Reply Buttons"></lightning-menu-subheader>
+								<lightning-menu-item value="custom" label="Custom"></lightning-menu-item>
+								<lightning-menu-subheader label="Call to action Buttons"></lightning-menu-subheader>
+								<lightning-menu-item value="website" label="Visit website"></lightning-menu-item>
+								<lightning-menu-item value="phoneNumber" label="Call Phone Number"></lightning-menu-item>
+							</lightning-button-menu>
+						</div>
+						<div if:true={isShowButtons} class="buttons-list-wrap">
+							<div if:true={isShowQuickReply} class="slds-m-bottom_medium">
+								<div class="subsection-title">Quick reply</div>
+								<div class="customBtn-error">
+									<lightning-icon icon-name="utility:warning" alternative-text="warning" size="xx-small" class="warning-icon"></lightning-icon> Custom Button limit exceeded
+								</div>
+								<template for:each={templateData.buttons} for:item="button" for:index="indx">
+									<div if:true={button.isQuickReply} key={button.id} class="button-item-wrap">
+										<c-whats-app-template-button-cmp button-data={button} indx={indx}
+											customcount={customButtonCount} onbuttonclose={handleChangeButtonText}
+											onbuttondata={handleButtonData}>
+										</c-whats-app-template-button-cmp>
+									</div>
+								</template>
+							</div>
+							<div if:true={isShowCalltoAction} class="slds-m-top_medium">
+								<div class="subsection-title">Call to action</div>
+								<div class="websiteBtn-error">
+									<lightning-icon icon-name="utility:warning" alternative-text="warning" size="xx-small" class="warning-icon"></lightning-icon> You can add upto only one Website
+								</div>
+								<div class="phoneBtn-error">
+									<lightning-icon icon-name="utility:warning" alternative-text="warning" size="xx-small" class="warning-icon"></lightning-icon> You can add upto only one Phone Number
+								</div>
+								<div class="allBtn-error">
+									<lightning-icon icon-name="utility:warning" alternative-text="warning" size="xx-small" class="warning-icon"></lightning-icon> All Button limit exceeded
+								</div>
+								<template for:each={templateData.buttons} for:item="button" for:index="indx">
+									<div if:false={button.isQuickReply} key={button.id} class="button-item-wrap">
+										<c-whats-app-template-button-cmp button-data={button} indx={indx}
+											websitebutton={websiteButtonCount} phonebutton={phoneNumberButtonCount}
+											onphonebutton={handlePhonebuttonCount}
+											onwebsitebutton={handleWebsitebuttonCount}
+											onbuttonclose={handleChangeButtonText} onbuttondata={handleButtonData}>
+										</c-whats-app-template-button-cmp>
+									</div>
+								</template>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div slot="footer" class="card-footer slds-p-horizontal_medium slds-p-vertical_medium">
+				<lightning-button label="Cancel" variant="neutral" onclick={handleClose} class="slds-m-right_x-small"></lightning-button>
+				<lightning-button label="Save" variant="brand" onclick={handleSave} title="Save template"></lightning-button>
+			</div>
+		</template>
+		<template if:true={showTwilioForm}>
+			<div class="template-form slds-p-around_medium">
+				<div class="section-block slds-m-bottom_medium">
+					<div class="section-header-block">
+						<span class="section-header">
+							<lightning-icon icon-name="utility:record" alternative-text="" size="x-small" class="section-icon"></lightning-icon>
+							<span class="section-title-text">Template details</span>
+						</span>
+					</div>
+					<div class="section-content-block">
+						<div class="details-row slds-grid slds-gutters slds-wrap">
+							<div class="details-col slds-col slds-size_1-of_1 slds-medium-size_6-of-12">
+								<lightning-input type="text" label="Template Name" required value={twilioTemplateName}
+									onchange={handleTwilioTemplateNameChange} placeholder="e.g. Welcome Message"></lightning-input>
+							</div>
+							<div class="details-col slds-col slds-size_1-of_1 slds-medium-size_6-of-12">
+								<lightning-combobox name="objectName" label="Object Name" value={twilioObjectName}
+									placeholder="Select Object" options={objectOptions} onchange={handleTwilioObjectChange}></lightning-combobox>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="slds-divider slds-m-vertical_small"></div>
+				<div class="section-block slds-m-bottom_medium">
+					<div class="section-header-block">
+						<span class="section-header">
+							<lightning-icon icon-name="utility:richtext" alternative-text="" size="x-small" class="section-icon"></lightning-icon>
+							<span class="section-title-text">Body</span>
+						</span>
+					</div>
+					<div class="section-content-block">
+						<p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small section-desc">{twilioBodySectionDescription}</p>
+						<div class="body-input-wrap">
+							<lightning-textarea name="bodyText" label="Body Text" value={twilioBodyText}
+								onchange={handleTwilioBodyChange} placeholder={twilioBodyPlaceholder} class="body-textarea"></lightning-textarea>
+							<div class="merge-field-actions slds-m-top_x-small">
+								<lightning-button-menu alternative-text="Merge field" label="Insert merge field" icon-name="utility:insert_template" onselect={handleTwilioMergeFieldSelect}>
+									<template for:each={fieldOptions} for:item="fld">
+										<lightning-menu-item key={fld.value} value={fld.value} label={fld.label}></lightning-menu-item>
+									</template>
+								</lightning-button-menu>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="slds-divider slds-m-vertical_small"></div>
+				<div class="section-block slds-m-bottom_medium">
+					<div class="section-header-block">
+						<span class="section-header">
+							<lightning-icon icon-name="utility:picklist_type" alternative-text="" size="x-small" class="section-icon"></lightning-icon>
+							<span class="section-title-text">Response type</span>
+						</span>
+					</div>
+					<div class="section-content-block">
+						<p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">Choose how the customer can respond: text only, quick reply buttons, or list picker.</p>
+						<lightning-radio-group name="responseType" label="Type" value={twilioResponseType} options={responseTypeOptions}
+							onchange={handleTwilioResponseTypeChange} type="radio" class="response-type-group"></lightning-radio-group>
+					</div>
+				</div>
+				<template if:true={twilioHasOptions}>
+					<div class="slds-divider slds-m-vertical_small"></div>
+					<div class="section-block slds-m-bottom_medium">
+						<div class="section-header-block">
+							<span class="section-header">
+								<lightning-icon icon-name="utility:list" alternative-text="" size="x-small" class="section-icon"></lightning-icon>
+								<span class="section-title-text">Options</span>
+							</span>
+						</div>
+						<div class="section-content-block">
+							<p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small" if:true={twilioIsListPickerWithDesc}>Each row is <strong>one</strong> list option. Enter the option <strong>Title</strong> in the first box and its <strong>Description</strong> in the second box (both are sent separately to WhatsApp).</p>
+							<p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small" if:false={twilioIsListPickerWithDesc}>{twilioOptionsMapDesc}</p>
+							<p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">{twilioOptionsLimitMessage}</p>
+							<div class="options-list">
+								<template for:each={twilioOptions} for:item="opt" for:index="idx">
+									<div key={opt.id} class={twilioOptionCardClass}>
+										<div class="option-row-header">
+											<span class="option-row-label">{twilioOptionRowLabelPrefix} {opt.optionNumber}</span>
+											<lightning-button-icon icon-name="utility:delete" alternative-text="Remove this option" data-idx={opt.idx}
+												onclick={handleTwilioRemoveOption} variant="bare" class="option-remove-btn" title="Remove option"></lightning-button-icon>
+										</div>
+										<div class="option-fields-row">
+											<template if:true={twilioIsListPickerWithDesc}>
+												<div class="option-field option-field-title">
+													<lightning-input type="text" label="Title" value={opt.text} data-idx={opt.idx}
+														onchange={handleTwilioOptionChange} placeholder="Option title"></lightning-input>
+												</div>
+												<div class="option-field option-field-desc">
+													<lightning-input type="text" label="Description" value={opt.description} data-idx={opt.idx}
+														onchange={handleTwilioOptionDescChange} placeholder="Option description"></lightning-input>
+												</div>
+											</template>
+											<template if:false={twilioIsListPickerWithDesc}>
+												<div class="option-field option-field-single">
+													<lightning-input type="text" label={twilioOptionFirstLabel} value={opt.text} data-idx={opt.idx}
+														onchange={handleTwilioOptionChange} placeholder={twilioOptionTextPlaceholder}></lightning-input>
+												</div>
+											</template>
+										</div>
+									</div>
+								</template>
+							</div>
+							<lightning-button label="Add option" icon-name="utility:add" icon-position="left" onclick={handleTwilioAddOption}
+								class="slds-m-top_small add-option-btn" disabled={twilioAddOptionDisabled} title={twilioAddOptionDisabledTitle} variant="neutral"></lightning-button>
+						</div>
+					</div>
+				</template>
+			</div>
+			<div slot="footer" class="card-footer slds-p-horizontal_medium slds-p-vertical_medium">
+				<lightning-button label="Cancel" variant="neutral" onclick={handleTwilioCancel} class="slds-m-right_x-small"></lightning-button>
+				<lightning-button label="Save" variant="brand" onclick={handleTwilioSave} title="Save template"></lightning-button>
+			</div>
+		</template>
+		<template if:true={isPrompt}>
+			<section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01"
+				class="slds-modal slds-fade-in-open">
+				<div class="slds-modal__container ai-form">
+					<button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse">
+						<lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
+							size="small" onclick={handleClose}></lightning-icon>
+						<span class="slds-assistive-text">Close</span>
+					</button>
+					<div class="slds-modal__header">
+						<h1 id="modal-heading-02" class="slds-modal__title slds-hyphenate" tabindex="-1">{cardTitle}
+						</h1>
+					</div>
+					<div class="slds-modal__content slds-p-around_medium modal-content" id="modal-content-id-2">
+						<div class="use-ai-form-container">
+							<lightning-combobox name="channel" label="Channel" value={templateData.channel}
+								placeholder="Select Channel" options={channelOptions} data-name="channel"
+								onchange={handleChange}></lightning-combobox>
+							<lightning-combobox name="objectName" label="Object Name" value={templateData.objectName}
+								placeholder="Select Object" options={objectOptions} data-name="objectName"
+								onchange={handleChange}></lightning-combobox>
+							<lightning-textarea name="prompt" label="Enter your Prompt" placeholder="Prompt..."
+								onchange={handlePrompt}></lightning-textarea>
+							<br>
+							<lightning-button variant="brand" label="Generate" title="Primary action"
+								onclick={handleGenerate} class="slds-m-left_x-small"></lightning-button>
+							<lightning-button variant="brand-outline" label="Back" title="Primary action"
+								onclick={handleBack} class="slds-m-left_x-small"></lightning-button>
+
+							<div style="padding-top:10px; text-align: end;">
+								<lightning-button-menu alternative-text="Show menu" label="Merge Field"
+									menu-alignment="right" onselect={handleMenuSelect}
+									class="MergeStyling slds-dropdown_right">
+									<template for:each={fieldOptions} for:item="fld">
+										<lightning-menu-item class="slds-dropdown_right" value={fld.value}
+											label={fld.label} key={fld.value}></lightning-menu-item>
+									</template>
+								</lightning-button-menu>
+							</div>
+						</div>
+					</div>
+
+				</div>
+			</section>
+			<div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+		</template>
+	</lightning-card>
+</template>
