@@ -136,11 +136,7 @@ public class TwilioWhatsAppWebhookTest {
         RestContext.request = req;
         RestContext.response = res;
         
-        try {
-            TwilioWhatsAppWebhook.handleIncomingMessage();
-        } catch (Exception e) {
-            System.assert(true, 'Exception handled: ' + e.getMessage());
-        }
+        TwilioWhatsAppWebhook.handleIncomingMessage();
         
         Test.stopTest();
         
@@ -203,10 +199,40 @@ public class TwilioWhatsAppWebhookTest {
         System.assertEquals('ME123', msg.SmartMsg__Image_ID__c, 'Image_ID__c should match Meta-style storage');
         System.assertEquals('image/jpeg', msg.SmartMsg__Image_type__c, 'Image_type__c should store MIME type');
         System.assertEquals(null, msg.SmartMsg__Image_SHA256__c, 'Twilio webhook does not provide SHA256');
-        System.assert(msg.SmartMsg__File_Name__c != null && msg.SmartMsg__File_Name__c.startsWith('wa_image_'), 'File name should follow Meta wa_image_ pattern');
+        System.assert(
+            msg.SmartMsg__File_Name__c != null && msg.SmartMsg__File_Name__c.startsWith('twilio_wa_image_'),
+            'File name should follow Twilio twilio_wa_image_ pattern'
+        );
         System.assertNotEquals(null, msg.SmartMsg__Media_Url__c, 'Media should be stored as ContentDocument after download');
-        System.assertEquals('Twilio WhatsApp', msg.SmartMsg__Channel__c, 'Channel should be Twilio WhatsApp');
+        System.assertEquals('WhatsApp', msg.SmartMsg__Channel__c, 'Channel should be WhatsApp');
         System.assertEquals(200, res.statusCode, 'Webhook should return 200');
+
+        // Cover media helper branches directly (video/audio/document + filename derivation).
+        SmartMsg__Message__c m2 = new SmartMsg__Message__c();
+        Map<String, String> smsVideo = new Map<String, String>{
+            'MediaContentType0' => 'video/mp4',
+            'MessageType' => 'text'
+        };
+        TwilioWhatsAppWebhook.applyIncomingMediaFields(m2, smsVideo, 'https://api.twilio.com/2010-04-01/Accounts/ACTest/Media/MV123');
+        System.assertEquals('video', m2.SmartMsg__Message_Type__c, 'video/mp4 => video type');
+        System.assert(m2.SmartMsg__File_Name__c != null && m2.SmartMsg__File_Name__c.contains('.mp4'), 'Video filename should end with mp4');
+
+        SmartMsg__Message__c m3 = new SmartMsg__Message__c();
+        Map<String, String> smsAudio = new Map<String, String>{ 'MediaContentType0' => 'audio/mpeg' };
+        TwilioWhatsAppWebhook.applyIncomingMediaFields(m3, smsAudio, 'https://x/y/MA123');
+        System.assertEquals('audio', m3.SmartMsg__Message_Type__c, 'audio/* => audio type');
+        System.assert(m3.SmartMsg__File_Name__c != null && m3.SmartMsg__File_Name__c.contains('.mpeg'), 'Audio filename should include extension');
+
+        SmartMsg__Message__c m4 = new SmartMsg__Message__c();
+        Map<String, String> smsPdf = new Map<String, String>{ 'MediaContentType0' => 'application/pdf; charset=UTF-8' };
+        TwilioWhatsAppWebhook.applyIncomingMediaFields(m4, smsPdf, 'https://x/y/MD123');
+        System.assertEquals('document', m4.SmartMsg__Message_Type__c, 'application/pdf => document');
+        System.assert(m4.SmartMsg__File_Name__c != null && m4.SmartMsg__File_Name__c.endsWith('.pdf'), 'Document filename should end with pdf');
+
+        // Early return guard in applyIncomingMediaFields
+        SmartMsg__Message__c m5 = new SmartMsg__Message__c();
+        TwilioWhatsAppWebhook.applyIncomingMediaFields(m5, new Map<String, String>(), null);
+        System.assertEquals(null, m5.SmartMsg__Media_ID__c, 'Null media URL => no fields applied');
     }
 
     private class TwilioInboundMediaMock implements HttpCalloutMock {
@@ -258,11 +284,7 @@ public class TwilioWhatsAppWebhookTest {
         RestContext.request = req;
         RestContext.response = res;
         
-        try {
-            TwilioWhatsAppWebhook.handleIncomingMessage();
-        } catch (Exception e) {
-            System.assert(true, 'Exception handled: ' + e.getMessage());
-        }
+        TwilioWhatsAppWebhook.handleIncomingMessage();
         
         Test.stopTest();
         
@@ -317,11 +339,7 @@ public class TwilioWhatsAppWebhookTest {
         RestContext.request = req;
         RestContext.response = res;
         
-        try {
-            TwilioWhatsAppWebhook.handleIncomingMessage();
-        } catch (Exception e) {
-            System.assert(true, 'Exception handled: ' + e.getMessage());
-        }
+        TwilioWhatsAppWebhook.handleIncomingMessage();
         
         Test.stopTest();
         
@@ -377,11 +395,7 @@ public class TwilioWhatsAppWebhookTest {
         RestContext.request = req;
         RestContext.response = res;
         
-        try {
-            TwilioWhatsAppWebhook.handleIncomingMessage();
-        } catch (Exception e) {
-            System.assert(true, 'Exception handled: ' + e.getMessage());
-        }
+        TwilioWhatsAppWebhook.handleIncomingMessage();
         
         Test.stopTest();
         
@@ -412,16 +426,19 @@ public class TwilioWhatsAppWebhookTest {
         RestContext.request = req;
         RestContext.response = res;
         
-        try {
-            TwilioWhatsAppWebhook.handleIncomingMessage();
-        } catch (Exception e) {
-            System.assert(true, 'Exception handled: ' + e.getMessage());
-        }
+        TwilioWhatsAppWebhook.handleIncomingMessage();
         
         Test.stopTest();
-        
-        // No exception should be thrown, method should complete gracefully
-        System.assert(true, 'Method should handle empty params without exception');
+
+        // Cover helper methods and early-return guard logic with direct calls.
+        System.assertEquals(false, TwilioWhatsAppWebhook.hasTwilioInboundMedia(null, null), 'No sms + no media => false');
+        System.assertEquals(false, TwilioWhatsAppWebhook.hasTwilioInboundMedia(new Map<String, String>{ 'NumMedia' => '0' }, null), 'NumMedia=0 => false');
+
+        System.assertEquals(null, TwilioWhatsAppWebhook.extractWhatsAppPhoneNumber(null), 'Blank address => null');
+        System.assertEquals('+123', TwilioWhatsAppWebhook.extractWhatsAppPhoneNumber('  +123  '), 'Should keep + and trim');
+
+        System.assertEquals(null, TwilioWhatsAppWebhook.decodeTwilioMessageBody(null), 'Null body => null');
+        System.assertEquals('Tom\'s & Jerry', TwilioWhatsAppWebhook.decodeTwilioMessageBody('Tom&#39;s &amp; Jerry'), 'Should decode entities');
     }
 
     // ---------- Template approval callback (handleTwilioTemplateApprovalCallback) ----------
@@ -705,6 +722,14 @@ public class TwilioWhatsAppWebhookTest {
         Map<String, String> out = TwilioWhatsAppWebhook.parseFormUrlEncodedBody('a=b&c=d');
         System.assertEquals('b', out.get('a'), 'Key a should have value b');
         System.assertEquals('d', out.get('c'), 'Key c should have value d');
+
+        // Decode + and %xx
+        out = TwilioWhatsAppWebhook.parseFormUrlEncodedBody('msg=Tom%26Jerry+%231');
+        System.assertEquals('Tom&Jerry #1', out.get('msg'), 'Should URL-decode and treat + as space');
+
+        // Force urlDecode exception branch (invalid percent encoding) -> should store raw key/value.
+        out = TwilioWhatsAppWebhook.parseFormUrlEncodedBody('bad=%E0%A4');
+        System.assert(out.containsKey('bad'), 'Should still contain key when decode fails');
     }
 
     @isTest
