@@ -88,12 +88,12 @@ public without sharing class WhatsAppChatBot {
             }
         }
 
-        if(lastOutBoundMessageRecord.isEmpty() || message == 'Hi' || (responseType == 'button_reply' && lastOutBoundMessageRecord[0].SmartMsg__Dialogue__r.SmartMsg__Order_Number__c == null && message == 'Yes') || (responseType == 'button_reply'&& lastOutBoundMessageRecord[0].SmartMsg__Dialogue__r.SmartMsg__Order_Number__c == null && message == 'No')){
+        if(lastOutBoundMessageRecord.isEmpty() || message == 'Hi' || (responseType == 'button_reply' && lastOutBoundMessageRecord[0].SmartMsg__Dialogue__r.SmartMsg__Order_Number__c == null && message == 'Yes') || (responseType == 'button_reply'&& lastOutBoundMessageRecord[0].SmartMsg__Dialogue__r.SmartMsg__Order_Number__c == null && message == 'No, that\'s all.')){
             // get the option dialog record for "Hi"
             if((responseType == 'button_reply' && message == 'Yes')){
                 message = 'English';
             }
-            if((responseType == 'button_reply' && lastOutBoundMessageRecord[0].SmartMsg__Dialogue__r.SmartMsg__Order_Number__c == null && message == 'No')){
+            if((responseType == 'button_reply' && lastOutBoundMessageRecord[0].SmartMsg__Dialogue__r.SmartMsg__Order_Number__c == null && message == 'No, that\'s all.')){
                 sessionEndFlag = true;
             }
             optionDialogList = [SELECT Id, SmartMsg__Inbound_Response__c,SmartMsg__Inbound_Response__r.Id,SmartMsg__Outbound_Response__r.SmartMsg__Question_Description__c,SmartMsg__Inbound_Response__r.SmartMsg__Response__c,SmartMsg__Inbound_Response__r.SmartMsg__Type__c,SmartMsg__Outbound_Response__r.SmartMsg__Question__c , SmartMsg__Order_Number__c 
@@ -124,14 +124,40 @@ public without sharing class WhatsAppChatBot {
                 Decimal orderNumber;
                 if(lastOutBoundMessageRecord[0].SmartMsg__Option_Dialog__r.SmartMsg__Order_Number__c != null){
                     orderNumber = lastOutBoundMessageRecord[0].SmartMsg__Option_Dialog__r.SmartMsg__Order_Number__c + 1;
-                    if((lastOutBoundMessageRecord[0].SmartMsg__Dialogue__r.SmartMsg__Parent_Record__r.SmartMsg__Question__c != Constants.OTHER_QUESTION && (lastOutBoundMessageRecord[0].SmartMsg__Message_Body__c == Constants.CONFIRMATION_QUESTION) && message == 'No') || lastOutBoundMessageRecord[0].SmartMsg__Dialogue__r.SmartMsg__Parent_Record__r.SmartMsg__Question__c != Constants.OTHER_QUESTION && (lastOutBoundMessageRecord[0].SmartMsg__Message_Body__c == Constants.SCHEDULE_QUESTION)){
+                    String question = lastOutBoundMessageRecord[0].SmartMsg__Dialogue__r.SmartMsg__Parent_Record__r.SmartMsg__Question__c;
+                    
+                    // if(((lastOutBoundMessageRecord[0].SmartMsg__Message_Body__c.contains(Constants.CONFIRMATION_QUESTION)) && message.contains(Constants.PICKUP_NO_MESSAGE)) || (lastOutBoundMessageRecord[0].SmartMsg__Dialogue__r.SmartMsg__Parent_Record__r.SmartMsg__Question__c != Constants.OTHER_QUESTION && (lastOutBoundMessageRecord[0].SmartMsg__Message_Body__c.contains(Constants.SCHEDULE_QUESTION)))){
+                    //     orderNumber = orderNumber + 1;
+                    // }
+                    Boolean confirmChecker = false;
+                    Boolean scheduleChecker = false;
+                    Boolean pickupNoChecker = false;
+
+                    for(String str : Constants.PICKUP_NO_MESSAGE){
+                        if(message.contains(str)){
+                            pickupNoChecker = true;
+                        }
+                    }
+                    for(String str : Constants.CONFIRMATION_QUESTION){
+                        if(lastOutBoundMessageRecord[0].SmartMsg__Message_Body__c.contains(str)){
+                            confirmChecker = true;
+                        }
+                    }
+                    for(String str : Constants.SCHEDULE_QUESTION){
+                        if(lastOutBoundMessageRecord[0].SmartMsg__Message_Body__c.contains(str)){
+                            scheduleChecker = true;
+                        }
+                    }
+
+                    if((!Constants.OTHER_QUESTION.contains(question) && confirmChecker && pickupNoChecker)
+                     || (!Constants.OTHER_QUESTION.contains(question) && scheduleChecker)){
                         orderNumber = orderNumber + 1;
                     }
                     //Get the next option dialog record to send the response
                     optionDialogList = [SELECT Id, SmartMsg__Outbound_Response__r.Id FROM SmartMsg__Option_Dialog__c WHERE SmartMsg__Inbound_Response__r.Id =: lastOutBoundMessageRecord[0].SmartMsg__Option_Dialog__r.SmartMsg__Inbound_Response__r.Id AND SmartMsg__Order_Number__c =: orderNumber WITH SECURITY_ENFORCED ORDER BY createdDate];
                     optionDialogId = optionDialogList[0].Id;
                     dialogList = [SELECT Id, SmartMsg__Question__c, SmartMsg__Response__c, SmartMsg__Buttons_or_Options__c,SmartMsg__Order_Number__c, SmartMsg__Type__c
-                                            FROM SmartMsg__Dialogue__c WHERE SmartMsg__Parent_Template__r.SmartMsg__Active__c = true AND SmartMsg__Parent_Template__r.SmartMsg__Active__c = true AND Id =: optionDialogList[0].SmartMsg__Outbound_Response__r.Id WITH SECURITY_ENFORCED];
+                                            FROM SmartMsg__Dialogue__c WHERE SmartMsg__Parent_Template__r.SmartMsg__Active__c = true AND SmartMsg__Parent_Template__r.SmartMsg__Active__c = true AND Id =: optionDialogList[0].SmartMsg__Outbound_Response__r.Id WITH SECURITY_ENFORCED ORDER BY CreatedDate ASC];
                     optionDialogList = new List<SmartMsg__Option_Dialog__c>();
                 }
             }
@@ -140,7 +166,7 @@ public without sharing class WhatsAppChatBot {
                                         FROM SmartMsg__Option_Dialog__c WHERE SmartMsg__Inbound_Response__r.SmartMsg__Parent_Template__r.SmartMsg__Active__c = true AND Id =: optionDialogList[0].Id AND SmartMsg__Order_Number__c = 1 WITH SECURITY_ENFORCED ];
                 optionDialogId = optionDialogList[0].Id;
                 dialogList = [SELECT Id, SmartMsg__Question__c, SmartMsg__Response__c, SmartMsg__Buttons_or_Options__c,SmartMsg__Order_Number__c, SmartMsg__Type__c
-                                            FROM SmartMsg__Dialogue__c WHERE SmartMsg__Parent_Template__r.SmartMsg__Active__c = true AND Id =: optionDialogList[0].SmartMsg__Outbound_Response__r.Id WITH SECURITY_ENFORCED ];
+                                            FROM SmartMsg__Dialogue__c WHERE SmartMsg__Parent_Template__r.SmartMsg__Active__c = true AND Id =: optionDialogList[0].SmartMsg__Outbound_Response__r.Id WITH SECURITY_ENFORCED ORDER BY CreatedDate ASC];
                 optionDialogList = new List<SmartMsg__Option_Dialog__c>();
             }
         }

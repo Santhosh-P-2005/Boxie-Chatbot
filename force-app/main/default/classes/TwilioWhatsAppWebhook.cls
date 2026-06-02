@@ -18,6 +18,8 @@ global without sharing class TwilioWhatsAppWebhook {
         if(Constants.SUBSCRIPTION_END_DATE > String.valueOf(System.today())){
             RestRequest req = RestContext.request;
             RestResponse res = RestContext.response;
+            System.debug('req: ' + req);
+            System.debug('res: ' + res);
             Map<String, String> params = req.params != null ? req.params : new Map<String, String>();
             // Twilio sends status callbacks and incoming messages in POST body as form-urlencoded (or JSON). Parse body with UTF-8 so emojis/unicode are preserved.
             Map<String, String> bodyParams = new Map<String, String>();
@@ -63,8 +65,8 @@ global without sharing class TwilioWhatsAppWebhook {
             }
             String fromPhNumber;
             String smsBody;
-            string messageSid;
-            //String mediaUrl0;
+            String messageSid;
+            String mediaUrl0;
             String responseType;
             Boolean messageStatus = false;
             if(!sms.isEmpty()){
@@ -80,6 +82,9 @@ global without sharing class TwilioWhatsAppWebhook {
                 if (sms.containsKey('MessageSid')) {
                     messageSid = sms.get('MessageSid');
                 }
+                if (sms.containsKey('MediaUrl0')) {
+                    mediaUrl0 = sms.get('MediaUrl0');
+                }
                 // For interactive (list/button) messages, use ListTitle as message body (same as Meta list_reply.title); Body can be corrupted for emoji.
                 if ('interactive'.equalsIgnoreCase(sms.get('MessageType'))) {
                     if (String.isNotBlank(sms.get('ListTitle'))) {
@@ -93,29 +98,34 @@ global without sharing class TwilioWhatsAppWebhook {
                 } else if (sms.containsKey('ButtonText')) {
                     responseType = 'button_reply';
                 }
-                //res.addHeader('Content-Type', 'application/vcard');
+                if (messageStatus) {
+                    return;
+                }
+                Boolean hasMedia = hasTwilioInboundMedia(sms, mediaUrl0);
+                if (String.isBlank(fromPhNumber) || String.isBlank(messageSid)) {
+                    return;
+                }
+                if (String.isBlank(smsBody) && !hasMedia) {
+                    return;
+                }
                 if (!Schema.sObjectType.SmartMsg__Message__c.isCreateable()) {
                     throw new AuraHandledException('You do not have permission to create this message.');
                 }
                 SmartMsg__Message__c messageRec = new SmartMsg__Message__c();
-                if(smsBody != null){
-                    smsBody = smsBody.replace('&#39;', '\'')  // Apostrophe
-                        .replace('&quot;', '"')         // Double quote
-                        .replace('&amp;', '&')          // Ampersand
-                        .replace('&lt;', '<')           // Less than
-                        .replace('&gt;', '>')           // Greater than
-                        .replace('&ndash;', '–')        // En dash
-                        .replace('&mdash;', '—')        // Em dash
-                        .replace('&nbsp;', ' ');
-                    messageRec.SmartMsg__To_Number__c = String.valueOf(fromPhNumber).trim().split(':')[1];
-                    messageRec.SmartMsg__From_Number__c = String.valueOf(sms.get('To')).trim().split(':')[1];
-                    messageRec.SmartMsg__Message_Body__c = smsBody;
-                    messageRec.SmartMsg__Message_Id__c = messageSid;
-                    messageRec.SmartMsg__Is_Outgoing__c = False;
-                    messageRec.SmartMsg__Type__c = 'Inbound';
-                    messageRec.SmartMsg__Channel__c = 'WhatsApp';
-                    messageRec.SmartMsg__Delivery_Status__c = 'Received';
-                    messageRec.SmartMsg__Response__c = JSON.serialize(sms); // Store the entire response
+                if (String.isNotBlank(smsBody)) {
+                    smsBody = decodeTwilioMessageBody(smsBody);
+                }
+                messageRec.SmartMsg__To_Number__c = extractWhatsAppPhoneNumber(fromPhNumber);
+                messageRec.SmartMsg__From_Number__c = extractWhatsAppPhoneNumber(sms.get('To'));
+                messageRec.SmartMsg__Message_Body__c = smsBody;
+                messageRec.SmartMsg__Message_Id__c = messageSid;
+                messageRec.SmartMsg__Is_Outgoing__c = false;
+                messageRec.SmartMsg__Type__c = 'Inbound';
+                messageRec.SmartMsg__Channel__c = 'WhatsApp';
+                messageRec.SmartMsg__Delivery_Status__c = 'Received';
+                messageRec.SmartMsg__Response__c = JSON.serialize(sms);
+                if (hasMedia) {
+                    applyIncomingMediaFields(messageRec, sms, mediaUrl0);
                 }
                 Datetime currentDateTime = Datetime.now(); // UTC
                 messageRec.SmartMsg__Sent_Date_and_Time__c = currentDateTime; // Store as UTC
@@ -141,55 +151,31 @@ global without sharing class TwilioWhatsAppWebhook {
                     }
                 }
                 try {
-                    // string recId =messageRec.Id;
-                    // string toNum = messageRec.SmartMsg__To_Number__c;
-                    if(!messageStatus){
-                        messageRec.SmartMsg__Messaging_Session__c = TwilioWhatsAppChatBot.messagingSession(messageRec.SmartMsg__To_Number__c, 'Customer Message Received');
-                        if(sessionUpdateFlag){
-                            List<SmartMsg__Messaging_Session__c> messagingSessionList = [SELECT Id, SmartMsg__To_Number__c,  SmartMsg__Session_status__c, SmartMsg__No_of_Inbound_Messages__c,SmartMsg__No_of_Outbound_Messages__c FROM SmartMsg__Messaging_Session__c WHERE Id =: messageRec.SmartMsg__Messaging_Session__c WITH SECURITY_ENFORCED];
-                            messagingSessionList[0].SmartMsg__No_of_Inbound_Messages__c = messagingSessionList[0].SmartMsg__No_of_Inbound_Messages__c + 1;
-                            if(!messagingSessionList.isEmpty()){
-                                // if (!Schema.sObjectType.SmartMsg__Messaging_Session__c.isUpdateable()) {
-                                //     throw new AuraHandledException('You do not have permission to update Messaging_Session__c.');
-                                // }
-                                update messagingSessionList;
-                            }
+                    messageRec.SmartMsg__Messaging_Session__c = TwilioWhatsAppChatBot.messagingSession(messageRec.SmartMsg__To_Number__c, 'Customer Message Received');
+                    if(sessionUpdateFlag){
+                        List<SmartMsg__Messaging_Session__c> messagingSessionList = [SELECT Id, SmartMsg__To_Number__c,  SmartMsg__Session_status__c, SmartMsg__No_of_Inbound_Messages__c,SmartMsg__No_of_Outbound_Messages__c FROM SmartMsg__Messaging_Session__c WHERE Id =: messageRec.SmartMsg__Messaging_Session__c WITH SECURITY_ENFORCED];
+                        messagingSessionList[0].SmartMsg__No_of_Inbound_Messages__c = messagingSessionList[0].SmartMsg__No_of_Inbound_Messages__c + 1;
+                        if(!messagingSessionList.isEmpty()){
+                            update messagingSessionList;
                         }
-                        if(botResponse != null && botResponse == true){
-                            TwilioWhatsAppChatBot.nextResponseRecordWhatsAppChatbot(messageRec.SmartMsg__To_Number__c,smsBody,responseType,messageRec.SmartMsg__From_Number__c);
-                        }
-                        insert messageRec;
-                        // if(sessionUpdateFlag){
-                        //     List<SmartMsg__Messaging_Session__c> messagingSessionList = [SELECT Id, SmartMsg__To_Number__c,  SmartMsg__Session_status__c, SmartMsg__No_of_Inbound_Messages__c,SmartMsg__No_of_Outbound_Messages__c FROM SmartMsg__Messaging_Session__c WHERE Id =: messageRec.SmartMsg__Messaging_Session__c];
-                        //     messagingSessionList[0].SmartMsg__No_of_Inbound_Messages__c = messagingSessionList[0].SmartMsg__No_of_Inbound_Messages__c + 1;
-                        //     if(!messagingSessionList.isEmpty()){
-                        //         // if (!Schema.sObjectType.SmartMsg__Messaging_Session__c.isUpdateable()) {
-                        //         //     throw new AuraHandledException('You do not have permission to update Messaging_Session__c.');
-                        //         // }
-                        //         update messagingSessionList;
-                        //     }
-                        // }
                     }
-
-
-
-                    // Asynchronously process media if a media URL is present
-                    // if (String.isNotBlank(mediaUrl0)) {
-                        //processIncomingMedia(messageRec.Id, mediaUrl0);
-                    // }
-                    // SmartMsg__Incoming_Message__e event = new SmartMsg__Incoming_Message__e();
-                    // event.SmartMsg__Record_Id__c = recId;
-                    // event.SmartMsg__From_Number__c = toNum;
-                    // event.SmartMsg__Event_Type__c ='Inbound';
-                    // event.SmartMsg__Channel__c = messageRec.SmartMsg__Channel__c;
-                    // EventBus.publish(event);
+                    if(botResponse != null && botResponse == true && String.isNotBlank(smsBody)){
+                        TwilioWhatsAppChatBot.nextResponseRecordWhatsAppChatbot(messageRec.SmartMsg__To_Number__c,smsBody,responseType,messageRec.SmartMsg__From_Number__c);
+                    }
+                    insert messageRec;
+                    if (String.isNotBlank(mediaUrl0)) {
+                        // TwilioWebhook.processIncomingMedia(messageRec.Id, mediaUrl0);
+                    }
                     SmartMsg__Incoming_Message__e platformEvent = new SmartMsg__Incoming_Message__e();
                     platformEvent.SmartMsg__Record_Id__c = messageRec.Id;
                     platformEvent.SmartMsg__From_Number__c = messageRec.SmartMsg__To_Number__c;
                     platformEvent.SmartMsg__Delivery_Status__c = messageRec.SmartMsg__Delivery_Status__c;
-                    platformEvent.SmartMsg__Channel__c = 'WhatsApp';
+                    platformEvent.SmartMsg__Channel__c = messageRec.SmartMsg__Channel__c;
                     platformEvent.SmartMsg__Event_Type__c = 'Inbound';
                     Eventbus.publish(platformEvent);
+                    if (res != null) {
+                        res.statusCode = 200;
+                    }
                 } catch (Exception e) {
                     if (res != null) {
                         res.statusCode = 500;
@@ -285,6 +271,137 @@ global without sharing class TwilioWhatsAppWebhook {
     }
 
     /**
+     * @description Returns true when Twilio reports one or more media attachments on the inbound webhook.
+     */
+    @TestVisible
+    private static Boolean hasTwilioInboundMedia(Map<String, String> sms, String mediaUrl0) {
+        if (String.isNotBlank(mediaUrl0)) {
+            return true;
+        }
+        if (sms == null || sms.isEmpty()) {
+            return false;
+        }
+        String numMedia = sms.get('NumMedia');
+        return String.isNotBlank(numMedia) && numMedia != '0';
+    }
+
+    /**
+     * @description Strips whatsapp: prefix from Twilio From/To and returns E.164-style number with leading +.
+     */
+    @TestVisible
+    private static String extractWhatsAppPhoneNumber(String twilioAddress) {
+        if (String.isBlank(twilioAddress)) {
+            return null;
+        }
+        String normalized = String.valueOf(twilioAddress).trim();
+        if (normalized.contains(':')) {
+            normalized = normalized.substring(normalized.indexOf(':') + 1);
+        }
+        normalized = normalized.trim();
+        if (!normalized.startsWith('+')) {
+            normalized = '+' + normalized;
+        }
+        return normalized;
+    }
+
+    /**
+     * @description Decodes common HTML entities in Twilio message body text.
+     */
+    @TestVisible
+    private static String decodeTwilioMessageBody(String smsBody) {
+        if (smsBody == null) {
+            return null;
+        }
+        return smsBody.replace('&#39;', '\'')
+            .replace('&quot;', '"')
+            .replace('&amp;', '&')
+            .replace('&lt;', '<')
+            .replace('&gt;', '>')
+            .replace('&ndash;', '–')
+            .replace('&mdash;', '—')
+            .replace('&nbsp;', ' ');
+    }
+
+    /**
+     * @description Maps Twilio inbound media webhook params onto Message__c (aligned with Meta WhatsApp inbound fields).
+     */
+    @TestVisible
+    private static void applyIncomingMediaFields(SmartMsg__Message__c messageRec, Map<String, String> sms, String mediaUrl0) {
+        if (messageRec == null || String.isBlank(mediaUrl0)) {
+            return;
+        }
+        List<String> mediaUrl0List = mediaUrl0.split('/');
+        String mediaSid = mediaUrl0List[mediaUrl0List.size() - 1];
+        String contentType = sms != null ? sms.get('MediaContentType0') : null;
+        String messageType = resolveTwilioInboundMessageType(sms, contentType);
+
+        messageRec.SmartMsg__Media_File__c = true;
+        messageRec.SmartMsg__Media_ID__c = mediaSid;
+        messageRec.SmartMsg__Message_Type__c = messageType;
+        messageRec.SmartMsg__File_Name__c = deriveTwilioMediaFileName(contentType, messageType);
+        messageRec.SmartMsg__Media_Url__c = mediaUrl0;
+
+        if ('image'.equalsIgnoreCase(messageType)) {
+            messageRec.SmartMsg__Image_ID__c = mediaSid;
+            messageRec.SmartMsg__Image_type__c = contentType;
+        } else if ('video'.equalsIgnoreCase(messageType)) {
+            messageRec.SmartMsg__Video_ID__c = mediaSid;
+            messageRec.SmartMsg__Video_Type__c = contentType;
+        } else if ('audio'.equalsIgnoreCase(messageType)) {
+            messageRec.SmartMsg__Video_ID__c = mediaSid;
+            messageRec.SmartMsg__Video_Type__c = contentType;
+        } else if ('document'.equalsIgnoreCase(messageType)) {
+            messageRec.SmartMsg__Document_ID__c = mediaSid;
+            messageRec.SmartMsg__Document_Type__c = contentType;
+        }
+    }
+
+    @TestVisible
+    private static String resolveTwilioInboundMessageType(Map<String, String> sms, String contentType) {
+        String messageType = sms != null ? sms.get('MessageType') : null;
+        if (String.isNotBlank(messageType) && !'text'.equalsIgnoreCase(messageType)) {
+            return messageType.toLowerCase();
+        }
+        if (String.isBlank(contentType)) {
+            return 'document';
+        }
+        String lowerType = contentType.toLowerCase();
+        if (lowerType.startsWith('image/')) {
+            return 'image';
+        }
+        if (lowerType.startsWith('video/')) {
+            return 'video';
+        }
+        if (lowerType.startsWith('audio/')) {
+            return 'audio';
+        }
+        if (lowerType.startsWith('application/pdf') || lowerType.contains('document') || lowerType.contains('msword') || lowerType.contains('spreadsheet')) {
+            return 'document';
+        }
+        return 'document';
+    }
+
+    @TestVisible
+    private static String deriveTwilioMediaFileName(String contentType, String messageType) {
+        String extension = 'bin';
+        if (String.isNotBlank(contentType) && contentType.contains('/')) {
+            extension = contentType.substringAfter('/').trim();
+            if (extension.contains(';')) {
+                extension = extension.substringBefore(';').trim();
+            }
+        } else if ('image'.equalsIgnoreCase(messageType)) {
+            extension = 'jpg';
+        } else if ('video'.equalsIgnoreCase(messageType)) {
+            extension = 'mp4';
+        } else if ('audio'.equalsIgnoreCase(messageType)) {
+            extension = 'mp3';
+        } else if ('document'.equalsIgnoreCase(messageType)) {
+            extension = 'pdf';
+        }
+        return 'twilio_wa_' + messageType + '_' + Datetime.now().getTime() + '.' + extension;
+    }
+
+    /**
      * @description Parses POST body as form-urlencoded or JSON. Uses UTF-8 so emojis and Unicode (e.g. 🛒) are preserved in Body.
      * @param bodyRaw Raw request body blob.
      * @param headers Request headers (for Content-Type).
@@ -295,6 +412,7 @@ global without sharing class TwilioWhatsAppWebhook {
         Map<String, String> out = new Map<String, String>();
         if (bodyRaw == null || bodyRaw.size() == 0) return out;
         String bodyStr = bodyRaw.toString(); // Platform uses UTF-8 for Blob.toString(); ensures Unicode is preserved
+        System.debug('bodyStr: ' + bodyStr);
         if (String.isBlank(bodyStr)) return out;
         String contentType = null;
         if (headers != null) {
@@ -323,6 +441,8 @@ global without sharing class TwilioWhatsAppWebhook {
     /**
      * @description Parses application/x-www-form-urlencoded body string. Decodes keys and values with UTF-8 so emojis are preserved.
      * Replaces '+' with space before URL-decode per application/x-www-form-urlencoded spec.
+     * @param body Raw request body.
+     * @return Map of decoded form keys and values.
      */
     @TestVisible
     private static Map<String, String> parseFormUrlEncodedBody(String body) {

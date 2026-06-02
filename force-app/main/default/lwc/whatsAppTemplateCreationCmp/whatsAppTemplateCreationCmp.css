@@ -180,6 +180,16 @@
 }
 
 
+.sms-icon {
+    height: 50px;
+    width: 50px;
+    margin-right: 4px;
+    cursor: pointer;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+
 /* @media only screen and (max-width: 340px){
     .modal-container{
         margin: 10px;

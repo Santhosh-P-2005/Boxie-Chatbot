@@ -110,6 +110,10 @@ public without sharing class WhatsAppMessageUpdateHelper {
                     Eventbus.publish(platformEvent);
                     
                 }
+                // If this webhook payload contains only statuses (no inbound messages), stop here.
+                if (messagesList == null || messagesList.isEmpty()) {
+                    return;
+                }
             }
             if(templateId != NULL){
                 List<SmartMsg__Message_Template__c> templateList = [SELECT Id, SmartMsg__WhatsApp_Template_ID__c, SmartMsg__Status__c, SmartMsg__Error_Response__c FROM SmartMsg__Message_Template__c WHERE SmartMsg__WhatsApp_Template_ID__c = :templateId WITH SECURITY_ENFORCED LIMIT 1];
@@ -323,15 +327,17 @@ public without sharing class WhatsAppMessageUpdateHelper {
                     }
                     if(queriedMessageChatbotStatus.size() <= 0){
                         SmartMsg__Message__c smMsgStatusRecord = new SmartMsg__Message__c(SmartMsg__To_Number__c = imcomingMsgPhone,SmartMsg__Chatbot_on_off__c = true);
-                        if(!hasChatbotDialogAndOptionDialogRecords()){
-                            smMsgStatusRecord.SmartMsg__Chatbot_on_off__c = false;
-                        }
+                        // if(!hasChatbotDialogAndOptionDialogRecords()){
+                        //     smMsgStatusRecord.SmartMsg__Chatbot_on_off__c = false;
+                        // }
+                        // System.debug('Inserted in message update helper');
                         insert smMsgStatusRecord;
                         botResponse = smMsgStatusRecord.SmartMsg__Chatbot_on_off__c;
                     }
                 }
                 if(((String) message.get('type') == 'interactive' || (String) message.get('type') == 'text') &&  (botResponse != null && botResponse == true)){
-                    WhatsAppChatBot.nextResponseRecordWhatsAppChatbot((String) salesforceMessage.SmartMsg__To_Number__c,interactiveResponse, responseType);   //Send another whatsapp automatic response
+                    // WhatsAppChatBot.nextResponseRecordWhatsAppChatbot((String) salesforceMessage.SmartMsg__To_Number__c,interactiveResponse, responseType);   //Send another whatsapp automatic response
+                    WhatsAppAgent.getAgentResponse(interactiveResponse, salesforceMessage.SmartMsg__To_Number__c, salesforceMessage.SmartMsg__From_Number__c);
                 }
                 // Link ContentDocument to Message__c (if media was saved)
                 if (salesforceMessage.SmartMsg__Media_Url__c != null) {

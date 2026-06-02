@@ -17,7 +17,7 @@ public class TwilioWhatsAppController implements Queueable, Finalizer, Database.
     public boolean sessionEndFlag;
     public List<String> interactionList;
     public String responseType;
-
+    public String language;
     /**
      * @description Constructor for TwilioWhatsAppController; copies fields from the chatbot wrapper.
      * @param wrap The wrapper containing messageBody, toNumber, fromNumber, contentTemplateName, dialogId, optionDialogId, sessionEndFlag, interactionList, responseType.
@@ -32,6 +32,7 @@ public class TwilioWhatsAppController implements Queueable, Finalizer, Database.
         this.sessionEndFlag = wrap.sessionEndFlag;
         this.interactionList = wrap.interactionList;
         this.responseType = wrap.responseType;
+        this.language = wrap.language;
     }
 
     /**
@@ -43,14 +44,32 @@ public class TwilioWhatsAppController implements Queueable, Finalizer, Database.
         //fromNumber = '+13026001706';
         List<String> lines = messageContent.split('\\n');
         String finalResponse = String.join(lines, '\\n');
-        String contentVariable = '{"1":"'+finalResponse;
-        Integer a = 2;
+        // For list-picker templates we reserve {{1}} for the list button label, and {{2}} for the body.
+        // For quick-reply templates, the first variable is the body ({{1}}) and buttons start at {{2}}.
+        Boolean isListPicker = (responseType != null) && (responseType == 'Option' || responseType == 'Separate Option');
+        String listPickerButtonLabel = isListPicker ? getListPickerButtonLabelForRecipient(language) : null;
+
+        String contentVariable;
+        Integer a;
+        if (isListPicker) {
+            contentVariable = '{"1":"' + listPickerButtonLabel + '","2":"' + finalResponse;
+            a = 3;
+        } else {
+            contentVariable = '{"1":"' + finalResponse;
+            a = 2;
+        }
         for(Integer i = 1; i <= interactionList.size(); i++){
+            if(interactionList[i-1] == 'English'){
+                if(fromNumber.startsWith('+49')){
+                    interactionList[i-1] = 'Englisch';
+                }
+            }
             if(interactionList[i-1].contains('-')){
                 contentVariable = contentVariable+'","'+a+'":"'+interactionList[i-1].split('-')[0]+'","'+(a+1)+'":"'+interactionList[i-1].split('-')[1];
                 a = a+2;
             }else{
-                contentVariable = contentVariable.trim()+'","'+(i+1)+'":"'+interactionList[i-1];
+                Integer varIndex = isListPicker ? (i + 2) : (i + 1);
+                contentVariable = contentVariable.trim() + '","' + varIndex + '":"' + interactionList[i-1];
             }
         }
         contentVariable = contentVariable + '"}';
@@ -59,6 +78,20 @@ public class TwilioWhatsAppController implements Queueable, Finalizer, Database.
             '&ContentSid=' + EncodingUtil.urlEncode(contentSID, 'UTF-8') +
             '&ContentVariables=' + EncodingUtil.urlEncode(contentVariable, 'UTF-8');
         return body;
+    }
+
+    @TestVisible
+    private static String getListPickerButtonLabelForRecipient(String language) {
+
+        String buttonLabel;
+        if(language == 'deutsch'){
+            buttonLabel = 'Option wählen';
+        }else if(language == 'nederlands'){
+            buttonLabel = 'Kies een optie';
+        }else{
+            buttonLabel = 'Choose an option';
+        }
+        return buttonLabel;
     }
 
     /**
@@ -95,13 +128,13 @@ public class TwilioWhatsAppController implements Queueable, Finalizer, Database.
                 }
             }else{
                 if(contentTemplateName.contains('no_description')){
-                    payload = '{"friendly_name": "' + contentTemplateName + '","language": "en","types": {"twilio/list-picker": {"body": "{{1}}","button": "Choose Option","items": [{"item": "{{2}}","id": "{{2}}"}';
-                    for(Integer i=3; i <= size+1 ; i++){
+                    payload = '{"friendly_name": "' + contentTemplateName + '","language": "en","types": {"twilio/list-picker": {"body": "{{2}}","button": "{{1}}","items": [{"item": "{{3}}","id": "{{3}}"}';
+                    for(Integer i=4; i <= size+2 ; i++){
                         payload = payload + ',{"item": "{{'+i+'}}","id": "{{'+i+'}}"}';
                     }
                 }else{
-                    payload = '{"friendly_name": "' + contentTemplateName + '","language": "en","types": {"twilio/list-picker": {"body": "{{1}}","button": "Choose Option","items": [{"item": "{{2}}","id": "{{2}}","description": "{{3}}"}';
-                    for(Integer i=4; i < (size*2)+1 ; i+=2){
+                    payload = '{"friendly_name": "' + contentTemplateName + '","language": "en","types": {"twilio/list-picker": {"body": "{{2}}","button": "{{1}}","items": [{"item": "{{3}}","id": "{{3}}","description": "{{4}}"}';
+                    for(Integer i=5; i < (size*2)+2 ; i+=2){
                         payload = payload + ',{"item": "{{'+i+'}}","id": "{{'+i+'}}","description": "{{'+(i+1)+'}}"}';
                     }
                 }
@@ -131,7 +164,7 @@ public class TwilioWhatsAppController implements Queueable, Finalizer, Database.
         String body = chekContentAPI();
         List<SmartMsg__Message__c> messageList = makeCallout(body);
         //List<SmartMsg__Message__c> messageList = makeCallout(payload, messageContent, toPhone, dialogueId, optionDialogId);
-        Id messagingSession = TwilioWhatsAppChatBot.messagingSession(toPhone,null);
+        Id messagingSession = TwilioWhatsAppChatBot.messagingSession(toPhone, 'Automation Sent');
         for(SmartMsg__Message__c outBoundMessageRecord : messageList){
             outBoundMessageRecord.SmartMsg__Messaging_Session__c = messagingSession;
         }
@@ -201,7 +234,7 @@ public class TwilioWhatsAppController implements Queueable, Finalizer, Database.
             if(optionDialogId != null){
                 optionDialogList = [SELECT Id, SmartMsg__Inbound_Response__c, SmartMsg__Inbound_Response__r.Id,SmartMsg__Outbound_Response__r.Id FROM SmartMsg__Option_Dialog__c WHERE SmartMsg__Inbound_Response__r.Id =: dialogId];
                 if(!optionDialogList.isEmpty()){
-                    dialogList = [SELECT Id, SmartMsg__Parent_Record__c, SmartMsg__Buttons_or_Options__c,SmartMsg__Type__c, SmartMsg__Response__c FROM SmartMsg__Dialogue__c WHERE Id =: optionDialogList[0].SmartMsg__Outbound_Response__r.Id];
+                    dialogList = [SELECT Id, SmartMsg__Parent_Record__c, SmartMsg__Buttons_or_Options__c,SmartMsg__Type__c, SmartMsg__Response__c FROM SmartMsg__Dialogue__c WHERE Id =: optionDialogList[0].SmartMsg__Outbound_Response__r.Id ORDER BY CreatedDate ASC];
                     if(!dialogList.isEmpty()){
                         dialogId = dialogList[0].Id;
                     }
@@ -214,6 +247,11 @@ public class TwilioWhatsAppController implements Queueable, Finalizer, Database.
                     if(dialogList[0].SmartMsg__Buttons_or_Options__c != null ){
                         interactionList = (dialogList[0].SmartMsg__Buttons_or_Options__c).split('\n');
                     }
+                }
+                Long startTime = DateTime.now().getTime(); 
+                Long finishTime = DateTime.now().getTime(); 
+                while ((finishTime - startTime) < 1000) {
+                        finishTime = DateTime.now().getTime();
                 }
                 contentTemplateName = TwilioWhatsAppChatBot.getContentName(responseType,interactionList);
                 String body = chekContentAPI();

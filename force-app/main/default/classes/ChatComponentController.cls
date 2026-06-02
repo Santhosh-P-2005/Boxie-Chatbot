@@ -235,7 +235,7 @@ public with sharing class ChatComponentController {
     @AuraEnabled
     public static List<SmartMsg__Message__c> listWAMessages(String customerPhone){
 
-        List<SmartMsg__Message__c> messages = [SELECT SmartMsg__Business_Phone_Number__c, SmartMsg__Channel__c, CreatedById, CreatedDate, SmartMsg__Customer_Name__c, SmartMsg__Delivery_Status__c, SmartMsg__Error_Code__c, SmartMsg__ErrorMessage__c, SmartMsg__Failed_Reason__c, SmartMsg__From_Number__c, Id, SmartMsg__Image_type__c, SmartMsg__is_Bulk__c, SmartMsg__Is_Outgoing__c, SmartMsg__Is_Read__c, IsDeleted, SmartMsg__Media_File__c, SmartMsg__Media_Url__c,SmartMsg__File_Name__c, SmartMsg__Message__c, SmartMsg__Message_Body__c, SmartMsg__Message_Id__c, SmartMsg__Message_Template__c, SmartMsg__Message_Template_Body__c, SmartMsg__Message_Type__c, Name, SmartMsg__Outgoing__c, OwnerId, SmartMsg__Parent_Message_Id__c, SmartMsg__Pinned__c, SmartMsg__Reaction__c, SmartMsg__Related_Record_Id__c, SmartMsg__Response__c, SmartMsg__Retry_Count__c, SmartMsg__Scheduled_Date_Time__c, SmartMsg__Sent_At__c, SmartMsg__Sent_By_User__c, SmartMsg__Sent_Date_and_Time__c, SmartMsg__Starred__c, SystemModstamp, SmartMsg__To_Number__c, SmartMsg__Type__c,SmartMsg__Location_Address__c,SmartMsg__Location_Latitude__c,SmartMsg__Location_Longitude__c,SmartMsg__Location_Name__c,SmartMsg__Location_Link__c FROM SmartMsg__Message__c WHERE (SmartMsg__To_Number__c = :customerPhone OR SmartMsg__From_Number__c = :customerPhone) AND (SmartMsg__Channel__c = 'Whatsapp' OR SmartMsg__Channel__c = 'Twilio WhatsApp') WITH SECURITY_ENFORCED ORDER BY CreatedDate ASC];
+        List<SmartMsg__Message__c> messages = [SELECT SmartMsg__Business_Phone_Number__c, SmartMsg__Channel__c, CreatedById, CreatedDate, SmartMsg__Customer_Name__c, SmartMsg__Delivery_Status__c, SmartMsg__Error_Code__c, SmartMsg__ErrorMessage__c, SmartMsg__Failed_Reason__c, SmartMsg__From_Number__c, Id, SmartMsg__Image_type__c, SmartMsg__Video_Type__c, SmartMsg__Document_Type__c, SmartMsg__is_Bulk__c, SmartMsg__Is_Outgoing__c, SmartMsg__Is_Read__c, IsDeleted, SmartMsg__Media_File__c, SmartMsg__Media_Url__c,SmartMsg__File_Name__c, SmartMsg__Message__c, SmartMsg__Message_Body__c, SmartMsg__Message_Id__c, SmartMsg__Message_Template__c, SmartMsg__Message_Template_Body__c, SmartMsg__Message_Type__c, Name, SmartMsg__Outgoing__c, OwnerId, SmartMsg__Parent_Message_Id__c, SmartMsg__Pinned__c, SmartMsg__Reaction__c, SmartMsg__Related_Record_Id__c, SmartMsg__Response__c, SmartMsg__Retry_Count__c, SmartMsg__Scheduled_Date_Time__c, SmartMsg__Sent_At__c, SmartMsg__Sent_By_User__c, SmartMsg__Sent_Date_and_Time__c, SmartMsg__Starred__c, SystemModstamp, SmartMsg__To_Number__c, SmartMsg__Type__c,SmartMsg__Location_Address__c,SmartMsg__Location_Latitude__c,SmartMsg__Location_Longitude__c,SmartMsg__Location_Name__c,SmartMsg__Location_Link__c FROM SmartMsg__Message__c WHERE (SmartMsg__To_Number__c = :customerPhone OR SmartMsg__From_Number__c = :customerPhone) AND (SmartMsg__Channel__c = 'Whatsapp' OR SmartMsg__Channel__c = 'Twilio WhatsApp') WITH SECURITY_ENFORCED ORDER BY CreatedDate ASC];
         return messages;
     }
 
@@ -320,6 +320,97 @@ public with sharing class ChatComponentController {
             Map<String, Object> recordDetails = new Map<String, Object>();
             if (String.isBlank(phoneField)) {
                 phoneField = 'Phone';
+            }
+
+            // Special handling: on Case pages, resolve phone for messaging:
+            // 1) If Case.Description contains "Phone : <number>" (fixed format), use that
+            // 2) Else, if Contact is linked, use Contact Phone and MobilePhone only
+            if (objectName == 'Case') {
+                List<Case> caseList = [
+                    SELECT Id, Subject, ContactId, Description
+                    FROM Case
+                    WHERE Id = :recordId
+                    WITH SECURITY_ENFORCED
+                    LIMIT 1
+                ];
+                if (!caseList.isEmpty()) {
+                    Case cs = caseList[0];
+                    recordDetails.put('Name', String.isNotBlank(cs.Subject) ? cs.Subject : 'Case');
+                    if (cs.ContactId != null) {
+                        recordDetails.put('ContactId', String.valueOf(cs.ContactId));
+                    }
+
+                    // 1) Extract phone from Description using fixed format:
+                    // - split by new lines
+                    // - find the line containing "Phone :"
+                    // - split that line by spaces and pick the token that starts with '+'
+                    // Example line: "Phone : +919344754079"
+                    String descPhone = null;
+                    if (String.isNotBlank(cs.Description)) {
+                        for (String line : cs.Description.split('\\n')) {
+                            if (String.isBlank(line)) continue;
+                            if (line.contains('Phone :')) {
+                                for (String part : line.split(' ')) {
+                                    if (String.isNotBlank(part) && part.startsWith('+')) {
+                                        descPhone = part.trim();
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    if (String.isNotBlank(descPhone)) {
+                        recordDetails.put('Phone', descPhone);
+                        recordDetails.put('PhoneFields', new Map<String, String>{ 'Phone' => descPhone });
+                        recordDetails.put('PhoneSource', 'Description');
+                        return recordDetails;
+                    }
+
+                    // 2) Fallback to linked Contact Phone and MobilePhone only
+                    if (cs.ContactId != null) {
+                        List<Contact> contacts = [
+                            SELECT Id, Name, Phone, MobilePhone
+                            FROM Contact
+                            WHERE Id = :cs.ContactId
+                            WITH SECURITY_ENFORCED
+                            LIMIT 1
+                        ];
+                        if (!contacts.isEmpty()) {
+                            Contact c = contacts[0];
+                            if (String.isNotBlank(c.Name)) {
+                                recordDetails.put('Name', c.Name);
+                            }
+                            Map<String, String> phoneValues = new Map<String, String>();
+                            if (String.isNotBlank(c.Phone)) {
+                                String ph = c.Phone.replaceAll('[^\\d+]', '');
+                                phoneValues.put('Phone', ph.startsWith('+') ? ph : '+' + ph);
+                            }
+                            if (String.isNotBlank(c.MobilePhone)) {
+                                String mob = c.MobilePhone.replaceAll('[^\\d+]', '');
+                                phoneValues.put('MobilePhone', mob.startsWith('+') ? mob : '+' + mob);
+                            }
+                            recordDetails.put('PhoneFields', phoneValues);
+                            String selected = null;
+                            if (phoneValues.containsKey(phoneField)) {
+                                selected = phoneValues.get(phoneField);
+                            } else if (phoneValues.containsKey('Phone')) {
+                                selected = phoneValues.get('Phone');
+                            } else if (phoneValues.containsKey('MobilePhone')) {
+                                selected = phoneValues.get('MobilePhone');
+                            }
+                            recordDetails.put('Phone', selected);
+                            recordDetails.put('PhoneSource', 'Contact');
+                            return recordDetails;
+                        }
+                    }
+
+                    // No phone found in description or linked contact
+                    recordDetails.put('Phone', null);
+                    recordDetails.put('PhoneFields', new Map<String, String>());
+                    recordDetails.put('PhoneSource', 'None');
+                    return recordDetails;
+                }
             }
 
             if (objectName == 'Opportunity' || objectName == 'Account') {
@@ -573,7 +664,7 @@ public with sharing class ChatComponentController {
         }
         customerPhone = customerPhone.substring(1);
         String phoneFilter = '%' + customerPhone + '%';
-        List<SmartMsg__Message__C> messageList = [SELECT Id, Name, SmartMsg__Message_Body__c, SmartMsg__Channel__c, SmartMsg__To_Number__c, SmartMsg__Media_Url__c, SmartMsg__Failed_Reason__c, SmartMsg__Retry_Count__c,SmartMsg__FilesBiSync_Related_Folder_Ids__c, SmartMsg__Delivery_Status__c, SmartMsg__is_Bulk__c, CreatedDate, SmartMsg__Type__c, SmartMsg__File_Content__c,SmartMsg__Location_Address__c,SmartMsg__Location_Latitude__c,SmartMsg__Location_Longitude__c,SmartMsg__Location_Name__c,SmartMsg__Location_Link__c, SmartMsg__File_Name__c, SmartMsg__Sent_Date_and_Time__c, CreatedBy.Name, SmartMsg__Scheduled_Date_Time__c FROM SmartMsg__Message__C WHERE Id = :recordId AND SmartMsg__To_Number__c LIKE :phoneFilter WITH SECURITY_ENFORCED ORDER BY CreatedDate ASC];
+        List<SmartMsg__Message__C> messageList = [SELECT Id, Name, SmartMsg__Message_Body__c, SmartMsg__Channel__c, SmartMsg__To_Number__c, SmartMsg__Media_Url__c, SmartMsg__Failed_Reason__c, SmartMsg__Retry_Count__c,SmartMsg__FilesBiSync_Related_Folder_Ids__c, SmartMsg__Delivery_Status__c, SmartMsg__is_Bulk__c, CreatedDate, SmartMsg__Type__c, SmartMsg__File_Content__c,SmartMsg__Location_Address__c,SmartMsg__Location_Latitude__c,SmartMsg__Location_Longitude__c,SmartMsg__Location_Name__c,SmartMsg__Location_Link__c, SmartMsg__File_Name__c, SmartMsg__Message_Type__c, SmartMsg__Image_type__c, SmartMsg__Video_Type__c, SmartMsg__Document_Type__c, SmartMsg__Sent_Date_and_Time__c, CreatedBy.Name, SmartMsg__Scheduled_Date_Time__c FROM SmartMsg__Message__C WHERE Id = :recordId AND SmartMsg__To_Number__c LIKE :phoneFilter WITH SECURITY_ENFORCED ORDER BY CreatedDate ASC];
         if(!messageList.isEmpty()){
             return messageList[0];
         }
@@ -674,6 +765,39 @@ public with sharing class ChatComponentController {
         }
         //SubscriptionExpiryNotificationService.sendSubscriptionExpiryWarningIfNeeded();
         return result;
+    }
+
+    /**
+     * @description Sends a WhatsApp media message via the active provider (Meta or Twilio).
+     * @param messageRecordId Existing Message__c Id.
+     * @param mediaType Media type for Meta API (image, video, document, audio).
+     * @param mediaUrl Public media URL.
+     * @param toPhone Recipient phone number.
+     * @param caption Optional caption/body.
+     * @param fileName Optional file name for document media (Meta).
+     * @param fromNumber Optional from number for Twilio WhatsApp.
+     * @return Updated message record.
+     */
+    @AuraEnabled
+    public static SmartMsg__Message__c sendMediaMessageWithFrom(
+        Id messageRecordId,
+        String mediaType,
+        String mediaUrl,
+        String toPhone,
+        String caption,
+        String fileName,
+        String fromNumber
+    ) {
+        if (Constants.SUBSCRIPTION_END_DATE <= String.valueOf(System.today())) {
+            throw new AuraHandledException('Subscription expired');
+        }
+        if (SmartMsg__Meta_Configuration__c.getInstance()?.SmartMsg__Active__c == true) {
+            return whatsAppServices.sendMediaMessage(messageRecordId, mediaType, mediaUrl, toPhone, caption, fileName);
+        }
+        if (SmartMsg__Twilio_Whatsapp__c.getInstance()?.SmartMsg__Active__c == true) {
+            return TwilioWhatsAppServices.sendMediaMessage(messageRecordId, mediaUrl, toPhone, caption, fromNumber);
+        }
+        throw new AuraHandledException('No active WhatsApp provider (Meta or Twilio) configured.');
     }
 
     /**
@@ -857,20 +981,23 @@ public with sharing class ChatComponentController {
                 newMessage.SmartMsg__File_Name__c = publicFileName;
                 newMessage.SmartMsg__Media_File__c = true; // Still mark as media
             }
+            Id messagingSessionId = TwilioWhatsAppChatBot.messagingSessionForOutbound(formattedPhoneNumber);
+            if (messagingSessionId != null) {
+                newMessage.SmartMsg__Messaging_Session__c = messagingSessionId;
+            }
             insert newMessage;
             // Step 3: Link ContentDocument to Message__c (actual record)
             if (hasFile) {
                 if (!Schema.sObjectType.ContentDocumentLink.isCreateable() && !Schema.sObjectType.ContentDocumentLink.isUpdateable()) {
                     throw new AuraHandledException('You do not have permission to create this message.');
                 } else{
-                    ContentDocumentLink cdl = new ContentDocumentLink();
-                    cdl.ContentDocumentId = contentDocumentId;
-                    cdl.LinkedEntityId = newMessage.Id;
-                    cdl.ShareType = 'V'; // Viewer access
-                    if (!CommonUtil.hasFLS(cdl)) {
+                    List<ContentDocumentLink> cdlList = new List<ContentDocumentLink>();
+                    cdlList.add(new ContentDocumentLink(ContentDocumentId = contentDocumentId, LinkedEntityId = newMessage.Id, ShareType = 'V'));
+                    cdlList.add(new ContentDocumentLink(ContentDocumentId = contentDocumentId, LinkedEntityId = messagingSessionId, ShareType = 'V'));
+                    if (!CommonUtil.hasFLS(cdlList[0]) || !CommonUtil.hasFLS(cdlList[1])) {
                         throw new AuraHandledException('You do not have the necessary field permissions to update Message records records.');
                     }else{
-                        insert cdl;
+                        insert cdlList;
                     }
                 }
             }
@@ -884,6 +1011,7 @@ public with sharing class ChatComponentController {
             throw new AuraHandledException('Error creating message record: ' + e.getMessage());
         }
     }
+
 
     /**
          * @description generatePublicUrlForContentDocument

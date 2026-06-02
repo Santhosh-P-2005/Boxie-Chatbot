@@ -5,6 +5,8 @@
  */
 // @SuppressWarnings('PMD.ApexCRUDViolation')
 public with sharing class ProviderSettingsConfigController {
+    
+
     /**
      * @description Retrieves all records from the ProviderSettings__c custom setting.
      * @return List<ProviderSettings__c> - A list of all provider settings records.
@@ -29,6 +31,7 @@ public with sharing class ProviderSettingsConfigController {
                 providerSettingMeta.phoneNumberId = metaSetting.SmartMsg__Phone_Number_Id__c;
                 providerSettingMeta.serviceProviderName = metaSetting.SmartMsg__Service_Provider_Name__c;
                 providerSettingMeta.whatsAppBusinessId = metaSetting.SmartMsg__WhatsApp_Business_Id__c;
+                providerSettingMeta.agent = metaSetting.SmartMsg__Agent__c;
                 providerSettingMeta.isActive = metaSetting.SmartMsg__Active__c;
 
                 providerSettings.add(providerSettingMeta);
@@ -62,6 +65,7 @@ public with sharing class ProviderSettingsConfigController {
                 providerSetting.twilioPhoneNumber = twilioWhatsappSetting.SmartMsg__Twilio_Phone_Number__c;
                 providerSetting.statusCallbackUrl = twilioWhatsappSetting.SmartMsg__StatusCallbackUrl__c;
                 providerSetting.fromPhoneNumbers = twilioWhatsappSetting.SmartMsg__From_Phone_Numbers__c;
+                providerSetting.agent = twilioWhatsappSetting.SmartMsg__Agent__c;
                 providerSetting.isActive = twilioWhatsappSetting.SmartMsg__Active__c;
                 providerSettings.add(providerSetting);
             }
@@ -99,6 +103,7 @@ public with sharing class ProviderSettingsConfigController {
                 setting.SmartMsg__Auth_Token__c = providerSetting.authToken;
                 setting.SmartMsg__Phone_Number_Id__c = providerSetting.phoneNumberId;
                 setting.SmartMsg__WhatsApp_Business_Id__c = providerSetting.whatsAppBusinessId;
+                setting.SmartMsg__Agent__c = providerSetting.agent;
                 setting.SmartMsg__Service_Provider_Name__c = providerSetting.serviceProviderName;
                 setting.SmartMsg__Channel__c = providerSetting.channel;
                 setting.SmartMsg__Active__c = providerSetting.isActive;
@@ -147,6 +152,7 @@ public with sharing class ProviderSettingsConfigController {
                 setting.SmartMsg__Twilio_Phone_Number__c = providerSetting.twilioPhoneNumber;
                 setting.SmartMsg__StatusCallbackUrl__c = providerSetting.statusCallbackUrl;
                 setting.SmartMsg__From_Phone_Numbers__c = providerSetting.fromPhoneNumbers;
+                setting.SmartMsg__Agent__c = providerSetting.agent;
                 setting.SmartMsg__Active__c = providerSetting.isActive;
                 if (!CommonUtil.hasFLS(setting)) {
                     throw new AuraHandledException('You do not have the necessary field permissions to update Message records records.');

@@ -123,13 +123,13 @@
                   </header>
                   <div class="slds-modal__content slds-p-around_medium">
                      <div if:true={isDocument}>
-                        <lightning-input label="File Name" value={fileName} onchange={handleFileNameChange} required>
+                        <lightning-input label="File Name" value={fileName} onchange={handleFileNameChange} required disabled={isAutoReplyEnabled}>
                         </lightning-input>
                         <template if:true={fileNameError}>
                            <p class="slds-text-color_error">File Name is required.</p>
                         </template>
                      </div>
-                     <lightning-input label="Media URL" value={mediaUrl} onchange={handleMediaUrlChange} required>
+                     <lightning-input label="Media URL" value={mediaUrl} onchange={handleMediaUrlChange} required disabled={isAutoReplyEnabled}>
                      </lightning-input>
                      <template if:true={mediaUrlError}>
                         <p class="slds-text-color_error">Media URL is required.</p>
@@ -139,7 +139,7 @@
                      <button class="slds-button slds-button_neutral"
                         onclick={closeMediaUrlModal}>{label.CANCEL_LABEL}</button>
                      <button class="slds-button slds-button_brand"
-                        onclick={handleSaveMediaUrl}>{label.SAVE_LABEL}</button>
+                        onclick={handleSaveMediaUrl} disabled={isAutoReplyEnabled}>{label.SAVE_LABEL}</button>
                   </footer>
                </div>
                <!-- <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
@@ -158,13 +158,13 @@
                </div>
                <div class="media__content slds-p-around_medium">
                   <div if:true={isDocument}>
-                     <lightning-input label="File Name" value={fileName} onchange={handleFileNameChange} required>
+                     <lightning-input label="File Name" value={fileName} onchange={handleFileNameChange} required disabled={isAutoReplyEnabled}>
                      </lightning-input>
                      <template if:true={fileNameError}>
                         <p class="slds-text-color_error">File Name is required.</p>
                      </template>
                   </div>
-                  <lightning-input label="Media URL" value={mediaUrl} onchange={handleMediaUrlChange} required>
+                  <lightning-input label="Media URL" value={mediaUrl} onchange={handleMediaUrlChange} required disabled={isAutoReplyEnabled}>
                   </lightning-input>
                   <template if:true={mediaUrlError}>
                      <p class="slds-text-color_error">Media URL is required.</p>
@@ -173,12 +173,13 @@
                <div class="media__footer">
                   <button class="slds-button slds-button_neutral"
                      onclick={closeMediaUrlModal}>{label.CANCEL_LABEL}</button>
-                  <button class="slds-button slds-button_brand" onclick={handleSaveMediaUrl}>{label.SAVE_LABEL}</button>
+                  <button class="slds-button slds-button_brand" onclick={handleSaveMediaUrl} disabled={isAutoReplyEnabled}>{label.SAVE_LABEL}</button>
                </div>
             </div>
          </template>
       </template>
       <template if:false={isPermissionError}>
+         <div class="sticky-container">
          <!-- <div class="slds-card__header margin-zero"> 
             <div class="slds-media"> 
             
@@ -221,6 +222,7 @@
                                  </div>
                               </template>
                               <template if:true={selectedContact}>
+                                 <template if:false={isCaseRecord}>
                                  <!-- <div class="Contact-Switch"> 
                                  <lightning-icon icon-name="standard:people" size="small" 
                                  
@@ -240,6 +242,7 @@
                                     selected-record={selectedContact} default-selected-option={defaultSelectedOption}
                                     onselect={handleContactSelected} class="search-contact">
                                  </c-generic-lookup>
+                                 </template>
                               </template>
                               <!-- <lightning-button-icon icon-name="utility:search" alternative-text="Search Messages" 
                               size="x-large" onclick={toggleSearch} class="search-icon" title="Search Messages"> 
@@ -259,7 +262,7 @@
                                           />
                                           <span class="wa-toggle-slider"></span>
                                        </label>
-                                       <div class="wa-toggle-subtitle">Chatbot on/off</div>
+                                       <div class="wa-toggle-subtitle">Auto-Response</div>
                                     </div>
                                  </template>
                                  <div class="refresh-desktop">
@@ -318,7 +321,7 @@
                               </header>
                               <div class="slds-modal__content slds-p-around_medium">
                                  <lightning-input name="AddFile" label="Attach File" type="file" accept=".png"
-                                    onchange={handleFileUploaded}>
+                                    onchange={handleFileUploaded} disabled={isAutoReplyEnabled}>
                                  </lightning-input>
                                  <template if:true={fileError}>
                                     <span class="slds-required">{fileError}</span>
@@ -327,10 +330,14 @@
                                     <span style="font-weight: 600;padding: 5px">{fileName}</span>
                                  </template>
                               </div>
+                              <div class="slds-text-body_small slds-text-color_weak slds-m-top_small slds-p-horizontal_medium">
+                                 Note: Supports JPG/JPEG/PNG/GIF/HEIC images, PDF documents, MP4/MPEG4/MPEG videos (max 600KB per video), and MP3/MP4/MPEG audio.
+                                 Max 5 files total size up to 3MB.
+                              </div>
                               <footer class="slds-modal__footer">
                                  <lightning-button variant="neutral" label="Cancel"
                                     onclick={closeFileModal}></lightning-button>
-                                 <lightning-button variant="brand" label="Upload" onclick={uploadFileData}
+                                 <lightning-button variant="brand" label="Upload" onclick={uploadFileData} disabled={isAutoReplyEnabled}
                                     style="margin-left:20px">
                                  </lightning-button>
                               </footer>
@@ -399,18 +406,19 @@
                                                       alternative-text="Starred"></lightning-icon>
                                                    </template> -->
                                                    <template if:true={message.isMedia}>
-                                                      <div class="image-message-container">
-                                                         <template if:true={message.isImage}>
-                                                            <img src={message.imageUrl} alt="Image"
-                                                               class="image-message" onclick={openMedia}
-                                                               data-url={message.imageUrl} />
-                                                         </template>
-                                                         <!-- Show spinner while image is loading -->
-                                                      </div>
-                                                      <template if:false={message.imageUrl}>
-                                                         <lightning-icon icon-name="doctype:image"
-                                                            alternative-text="Image file" title="Image">
-                                                         </lightning-icon>
+                                                      <template if:true={message.isImage}>
+                                                         <div class="image-message-container">
+                                                            <template if:true={message.imageUrl}>
+                                                               <img src={message.imageUrl} alt="Image"
+                                                                  class="image-message" onclick={openMedia}
+                                                                  data-url={message.imageUrl} />
+                                                            </template>
+                                                            <template if:false={message.imageUrl}>
+                                                               <lightning-icon icon-name="doctype:image"
+                                                                  alternative-text="Image file" title="Image">
+                                                               </lightning-icon>
+                                                            </template>
+                                                         </div>
                                                       </template>
                                                       <template if:true={message.isPdf}>
                                                          <lightning-icon icon-name="doctype:pdf"
@@ -625,18 +633,19 @@
                                                          </template>
                                                       </span>
                                                       <template if:true={message.isMedia}>
-                                                         <div class="image-message-container">
-                                                            <template if:true={message.isImage}>
-                                                               <img src={message.imageUrl} alt="Image"
-                                                                  class="image-message" onclick={openMedia}
-                                                                  data-url={message.imageUrl} />
-                                                            </template>
-                                                            <!-- Show spinner while image is loading -->
-                                                         </div>
-                                                         <template if:false={message.imageUrl}>
-                                                            <lightning-icon icon-name="doctype:image"
-                                                               alternative-text="Image file" title="Image">
-                                                            </lightning-icon>
+                                                         <template if:true={message.isImage}>
+                                                            <div class="image-message-container">
+                                                               <template if:true={message.imageUrl}>
+                                                                  <img src={message.imageUrl} alt="Image"
+                                                                     class="image-message" onclick={openMedia}
+                                                                     data-url={message.imageUrl} />
+                                                               </template>
+                                                               <template if:false={message.imageUrl}>
+                                                                  <lightning-icon icon-name="doctype:image"
+                                                                     alternative-text="Image file" title="Image">
+                                                                  </lightning-icon>
+                                                               </template>
+                                                            </div>
                                                          </template>
                                                          <template if:true={message.isPdf}>
                                                             <lightning-icon icon-name="doctype:pdf"
@@ -832,7 +841,7 @@
                         <p>WhatsApp does not allow sending messages to a user 24 hours after they last messaged
                            you. You can however send a template message.
                         </p>
-                        <button class="send-template-button" onclick={handleSendTemplate}>Send Template
+                        <button class="send-template-button" onclick={handleSendTemplate} disabled={isAutoReplyEnabled}>Send Template
                            Message</button>
                      </div>
                   </div>
@@ -847,7 +856,7 @@
                <span class="loading-text">Einstein is thinking...</span>
             </div>
          </template>
-         <div class="slds-card__footer footer-area margin-zero">
+         <div class={chatFooterClass}>
             <template if:true={isMobile}>
                <div class="footer-area margin-zero mobile-input slds-p-around_small" style="position:relative;">
                   <!-- New Icon as Action Menu Trigger -->
@@ -857,25 +866,27 @@
                   <!-- Action Menu (show/hide with state) -->
                   <template if:true={showFooterMenu}>
                      <div class="footer-action-menu slds-popover slds-popover_tooltip slds-nubbin_bottom-left">
-                        <template if:true={showScheduleAndAttachment}>
-                           <button class="footer-menu-btn" onclick={showSchedule} title="Schedule">
-                              <span class="footer-menu-icon schedule-bg">
-                                 <lightning-icon icon-name="standard:shift_scheduling_operation"
-                                    size="small"></lightning-icon>
+                        <template if:false={isAutoReplyEnabled}>
+                           <template if:true={showScheduleOption}>
+                              <button class="footer-menu-btn" onclick={showSchedule} title="Schedule">
+                                 <span class="footer-menu-icon schedule-bg">
+                                    <lightning-icon icon-name="standard:shift_scheduling_operation"
+                                       size="small"></lightning-icon>
+                                 </span>
+                              </button>
+                           </template>
+                           <button class="footer-menu-btn" onclick={showTemplates} title="Template">
+                              <span class="footer-menu-icon template-bg">
+                                 <lightning-icon icon-name="action:follow" size="x-small"></lightning-icon>
                               </span>
                            </button>
-                        </template>
-                        <button class="footer-menu-btn" onclick={showTemplates} title="Template">
-                           <span class="footer-menu-icon template-bg">
-                              <lightning-icon icon-name="action:follow" size="x-small"></lightning-icon>
-                           </span>
-                        </button>
-                        <template if:true={showScheduleAndAttachment}>
-                           <button class="footer-menu-btn" onclick={selectFileModal} title="Attach">
-                              <span class="footer-menu-icon attach-bg">
-                                 <lightning-icon icon-name="standard:attach" size="small"></lightning-icon>
-                              </span>
-                           </button>
+                           <template if:true={showAttachmentOption}>
+                              <button class="footer-menu-btn" onclick={selectFileModal} title="Attach">
+                                 <span class="footer-menu-icon attach-bg">
+                                    <lightning-icon icon-name="standard:attach" size="small"></lightning-icon>
+                                 </span>
+                              </button>
+                           </template>
                         </template>
                         <button class={footereinsteinToggleClass} onclick={toggleEinsteinMenu} title="Einstein">
                            <span class="footer-menu-icon einstein-bg">
@@ -923,16 +934,28 @@
                         <lightning-combobox value={selectedPhoneField} options={phoneFieldOptions}
                            onchange={handlePhoneFieldChange} variant="label-hidden" dropdown-alignment="bottom-left"
                            class="phone-field-dropdown phone-input"
-                           aria-label="Select Phone Field"></lightning-combobox>
+                           aria-label="Select Phone Field" disabled={isAutoReplyEnabled}></lightning-combobox>
                         <lightning-textarea class="chat-input msg-chat-input" type="text" value={messageText}
                            placeholder="Type a message..." onchange={handleMessageInputChange}
-                           onkeydown={handleKeyPress} variant="bare">
+                           onkeydown={handleKeyPress} variant="bare" disabled={isMessageInputDisabled}>
                         </lightning-textarea>
+                        <template if:true={isTemplateContentLocked}>
+                           <template if:false={isAutoReplyEnabled}>
+                              <div class="slds-text-body_small slds-text-color_error slds-m-top_x-small">
+                                 You cannot Edit the Template Content
+                              </div>
+                           </template>
+                        </template>
+                        <template if:true={isAutoReplyEnabled}>
+                           <div class="slds-text-body_small slds-text-color_error slds-m-top_x-small">
+                              You cannot send the manual Messages, When the Auto-Response is Active
+                           </div>
+                        </template>
                         <template if:true={limitMessage}>
                            <div class="error-message" if:true={inputerrorMessage}>{inputerrorMessage}</div>
                         </template>
                         <div class="error-message" if:true={inputerrorMessage}>{inputerrorMessage}</div>
-                        <template if:true={showScheduleAndAttachment}>
+                        <template if:true={showAttachmentOption}>
                            <div class="pill-container">
                               <template for:each={stagedAttachments} for:item="value">
                                  <span key={value.key}>
@@ -1021,16 +1044,18 @@
                <div class="icon-input">
                   <div class="footer-group footer-group-1">
                      <template if:false={hideUtilityBarElements}>
-                        <div class="icon-wrapper" onclick={showTemplates}>
-                           <lightning-icon icon-name="action:follow" size="small" alternative-text="Schedule Message"
-                              title="Select a Template">
-                           </lightning-icon>
-                        </div>
-                        <template if:true={showScheduleAndAttachment}>
-                           <div class="icon-wrapper" onclick={selectFileModal}>
-                              <lightning-icon icon-name="standard:attach" size="medium" alternative-text="Add File"
-                                 title="Add File" class="File-icon"></lightning-icon>
+                        <template if:false={isAutoReplyEnabled}>
+                           <div class="icon-wrapper" onclick={showTemplates}>
+                              <lightning-icon icon-name="action:follow" size="small" alternative-text="Schedule Message"
+                                 title="Select a Template">
+                              </lightning-icon>
                            </div>
+                           <template if:true={showAttachmentOption}>
+                              <div class="icon-wrapper" onclick={selectFileModal}>
+                                 <lightning-icon icon-name="standard:attach" size="medium" alternative-text="Add File"
+                                    title="Add File" class="File-icon"></lightning-icon>
+                              </div>
+                           </template>
                         </template>
                      </template>
                   </div>
@@ -1038,18 +1063,30 @@
                      <div class="input-wrapper">
                      <lightning-combobox value={selectedPhoneField} options={phoneFieldOptions}
                         onchange={handlePhoneFieldChange} variant="label-hidden" dropdown-alignment="bottom-left"
-                        class="phone-field-dropdown phone-input" aria-label="Select Phone Field"></lightning-combobox>
+                        class="phone-field-dropdown phone-input" aria-label="Select Phone Field" disabled={isAutoReplyEnabled}></lightning-combobox>
                      <lightning-textarea class="chat-input" type="text" value={messageText}
                         placeholder="Type a message..." onchange={handleMessageInputChange} onkeydown={handleKeyPress}
-                        variant="bare">
+                        variant="bare" disabled={isMessageInputDisabled}>
                      </lightning-textarea>
+                     <template if:true={isTemplateContentLocked}>
+                        <template if:false={isAutoReplyEnabled}>
+                           <div class="slds-text-body_small slds-text-color_error slds-m-top_x-small">
+                              You cannot Edit the Template Content
+                           </div>
+                        </template>
+                     </template>
+                     <template if:true={isAutoReplyEnabled}>
+                        <div class="slds-text-body_small slds-text-color_error slds-m-top_x-small">
+                           You cannot send the manual Messages, When the Auto-Response is Active
+                        </div>
+                     </template>
                      <template if:true={limitMessage}>
                         Characters ({characterLength} / 500)
                      </template>
                      <div class="error-message" if:true={inputerrorMessage}>{inputerrorMessage}</div>
 
                      <template if:false={hideUtilityBarElements}>
-                        <template if:true={showScheduleAndAttachment}>
+                        <template if:true={showAttachmentOption}>
                            <div class="pill-container">
                               <template for:each={stagedAttachments} for:item="value">
                                  <span key={value.key}>
@@ -1106,38 +1143,40 @@
                      </div>
                      </div>
                      <template if:false={hideUtilityBarElements}>
-                        <template if:true={showScheduleAndAttachment}>
-                           <div class="icon-wrapper" onclick={showSchedule}>
-                              <lightning-icon icon-name="standard:shift_scheduling_operation" size="medium"
-                                 title="Schedule a message" alternative-text="Schedule"></lightning-icon>
-                              <template if:true={showSchedulePopup}>
-                                 <div class="scheduling-popup" onclick={stopPropagation}>
-                                    <div class="schedule-head">
-                                       <h1>{label.SEND_THIS_MESSAGE_ON_LABEL}</h1>
+                        <template if:false={isAutoReplyEnabled}>
+                           <template if:true={showScheduleOption}>
+                              <div class="icon-wrapper" onclick={showSchedule}>
+                                 <lightning-icon icon-name="standard:shift_scheduling_operation" size="medium"
+                                    title="Schedule a message" alternative-text="Schedule"></lightning-icon>
+                                 <template if:true={showSchedulePopup}>
+                                    <div class="scheduling-popup" onclick={stopPropagation}>
+                                       <div class="schedule-head">
+                                          <h1>{label.SEND_THIS_MESSAGE_ON_LABEL}</h1>
+                                       </div>
+                                       <div class="date-picker">
+                                          <lightning-input type="date" label="Select Date" value={selectedDate} min={minDate}
+                                             onchange={handleDateChange}>
+                                          </lightning-input>
+                                       </div>
+                                       <div class="time-picker">
+                                          <lightning-input type="time" label="Select Time" value={selectedTime} min={minTime}
+                                             onfocus={handleTime} onchange={handleTimeChange} disabled={isTimeDisabled}>
+                                          </lightning-input>
+                                          <br>
+                                       </div>
+                                       <div class="error-message" if:true={errorMessage}>{errorMessage}</div>
+                                       <div class="continue-button">
+                                          <button label="Continue" class="slds-button_stretch slds-size_10-of-12 continue-btn"
+                                             onclick={handleContinue}>
+                                             <span class="continue-label">
+                                                {label.SCHEDULE_LABEL}
+                                             </span>
+                                          </button>
+                                       </div>
                                     </div>
-                                    <div class="date-picker">
-                                       <lightning-input type="date" label="Select Date" value={selectedDate} min={minDate}
-                                          onchange={handleDateChange}>
-                                       </lightning-input>
-                                    </div>
-                                    <div class="time-picker">
-                                       <lightning-input type="time" label="Select Time" value={selectedTime} min={minTime}
-                                          onfocus={handleTime} onchange={handleTimeChange} disabled={isTimeDisabled}>
-                                       </lightning-input>
-                                       <br>
-                                    </div>
-                                    <div class="error-message" if:true={errorMessage}>{errorMessage}</div>
-                                    <div class="continue-button">
-                                       <button label="Continue" class="slds-button_stretch slds-size_10-of-12 continue-btn"
-                                          onclick={handleContinue}>
-                                          <span class="continue-label">
-                                             {label.SCHEDULE_LABEL}
-                                          </span>
-                                       </button>
-                                    </div>
-                                 </div>
-                              </template>
-                           </div>
+                                 </template>
+                              </div>
+                           </template>
                         </template>
                      </template>
                      <div class="icon-wrapper send" onclick={handleSendButtonClick}>
@@ -1237,6 +1276,8 @@
                 </button>
             </div>
             </template> -->
+      
+         </div>
       </template>
    </div>
    <template if:false={isMobile}>
@@ -1266,7 +1307,7 @@
                   <!-- Upload Option -->
                   <template if:true={showFileUploadSection}>
                      <lightning-input name="AddFile" label="Attach File" type="file" accept=".png"
-                        onchange={handleFileUploaded}> </lightning-input>
+                        onchange={handleFileUploaded} disabled={isAutoReplyEnabled}> </lightning-input>
                      <template if:true={fileNameError}>
                         <p class="slds-text-color_error">File Name is required.</p>
                      </template>
@@ -1287,6 +1328,10 @@
                         <p class="slds-text-color_error">Valid URL is required.</p>
                      </template>
                   </template>
+                  <div class="slds-text-body_small slds-text-color_weak slds-m-top_small slds-p-horizontal_medium">
+                     Note: Supports JPG/JPEG/PNG/GIF/HEIC images, PDF documents, MP4/MPEG4/MPEG videos (max 600KB per video), and MP3/MP4/MPEG audio.
+                     Max 5 files total size up to 3MB.
+                  </div>
                </div>
                <!-- <lightning-input name="AddFile" label="Attach File" type="file" accept=".png"
                      onchange={handleFileUploaded}>
@@ -1300,7 +1345,7 @@
 
                <footer class="slds-modal__footer">
                   <lightning-button variant="neutral" label="Cancel" onclick={closeFileModal}></lightning-button>
-                  <lightning-button variant="brand" label="Upload" onclick={handleUploadMediaButtonClick}
+                  <lightning-button variant="brand" label="Upload" onclick={handleUploadMediaButtonClick} disabled={isAutoReplyEnabled}
                      style="margin-left:20px">
                   </lightning-button>
                </footer>

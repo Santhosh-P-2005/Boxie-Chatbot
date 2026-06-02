@@ -180,7 +180,7 @@ export default class ProviderSettingsList extends LightningElement {
             mediaBaseUrl: '',
             environmentId: '',
             statusCallbackUrl: '',
-            fromPhoneNumbers: '',
+            fromPhoneNumbers: '',  
             isActive: false
         };
     }

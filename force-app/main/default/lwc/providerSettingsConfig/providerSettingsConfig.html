@@ -121,6 +121,17 @@
                                     <lightning-layout-item size="6" padding="around-small">
                                         <lightning-input label="WhatsApp Business ID" value={providerSettings.whatsappBusinessId} onchange={handleInputChange} data-id="whatsappBusinessId" required></lightning-input>
                                     </lightning-layout-item>
+                                    <lightning-layout-item size="6" padding="around-small">
+                                        <lightning-combobox
+                                            label="Available Agents (Agentforce)"
+                                            value={providerSettings.agent}
+                                            placeholder="Select Agent"
+                                            options={agentOptions}
+                                            onchange={handleInputChange}
+                                            data-id="agent"
+                                            >
+                                        </lightning-combobox>
+                                    </lightning-layout-item>
                                 </template>
                                 <template if:true={isTwilioWhatsApp}>
                                     <lightning-layout-item size="6" padding="around-small">
@@ -142,6 +153,7 @@
                                     <lightning-layout-item size="12" padding="around-small">
                                         <lightning-textarea label="From Phone Numbers" value={providerSettings.fromPhoneNumbers} onchange={handleInputChange} data-id="fromPhoneNumbers" placeholder="One number per line or comma-separated (e.g. +1234567890)"></lightning-textarea>
                                     </lightning-layout-item>
+                                    
                                 </template>
                             </lightning-layout>
                         </div>

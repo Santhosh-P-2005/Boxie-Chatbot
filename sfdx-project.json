@@ -6,7 +6,7 @@
       "path": "force-app",
       "default": true,
       "package": "Smart Messenger",
-      "versionDescription": "Smart Messenger with SMS and WhatsApp functionalities"
+      "versionDescription": "Package contains whatsapp communication feature"
     },
     {
       "versionName": "ver 0.1",
@@ -22,7 +22,7 @@
   "sfdcLoginUrl": "https://login.salesforce.com",
   "sourceApiVersion": "63.0",
   "packageAliases": {
-    "Smart Messenger": "0HoVW00000002TF0AY",
+    "Smart Messenger": "0HoVW00000002xt0AA",
     "Boxie Messenger": "0HoVW00000002Ur0AI"
   }
 }

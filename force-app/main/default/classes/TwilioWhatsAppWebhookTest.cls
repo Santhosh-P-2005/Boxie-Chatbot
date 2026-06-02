@@ -150,11 +150,81 @@ public class TwilioWhatsAppWebhookTest {
         System.assertEquals('hi', messages[0].SmartMsg__Message_Body__c, 'Message body should match');
         System.assertEquals('+1234567890', messages[0].SmartMsg__To_Number__c, 'To number should match');
         System.assertEquals('+1234567890', messages[0].SmartMsg__From_Number__c, 'From number should match');
-        System.assertEquals('WhatsApp', messages[0].SmartMsg__Channel__c, 'Channel should be WhatsApp');
+        System.assertEquals('WhatsApp', messages[0].SmartMsg__Channel__c, 'Channel should be Twilio WhatsApp');
         System.assertEquals('Received', messages[0].SmartMsg__Delivery_Status__c, 'Delivery status should be Received');
         System.assertNotEquals(null, messages[0].SmartMsg__Messaging_Session__c, 'Messaging session should be created');
     }
     
+    /**
+     * @description Test inbound WhatsApp media webhook stores media fields and downloads file to Salesforce.
+     */
+    @isTest
+    public static void testHandleIncomingMessageWithMedia() {
+        SmartMsg__Twilio_Whatsapp__c twilioSetting = TestObjectFactory.twilioWhatsAppSettings();
+        upsert twilioSetting;
+
+        Test.setMock(HttpCalloutMock.class, new TwilioInboundMediaMock());
+
+        Test.startTest();
+
+        RestRequest req = new RestRequest();
+        RestResponse res = new RestResponse();
+        req.requestURI = '/services/apexrest/twilioWhatsAppStatus/';
+        req.httpMethod = 'POST';
+        req.params.put('From', 'whatsapp:+1234567890');
+        req.params.put('To', 'whatsapp:+19876543210');
+        req.params.put('MessageSid', 'SMTestMediaInbound01');
+        req.params.put('MessageType', 'image');
+        req.params.put('NumMedia', '1');
+        req.params.put('MediaUrl0', 'https://api.twilio.com/2010-04-01/Accounts/ACTest/Media/ME123');
+        req.params.put('MediaContentType0', 'image/jpeg');
+        req.params.put('MediaSid0', 'ME123');
+        req.params.put('Body', 'Photo caption');
+
+        RestContext.request = req;
+        RestContext.response = res;
+
+        TwilioWhatsAppWebhook.handleIncomingMessage();
+
+        Test.stopTest();
+
+        SmartMsg__Message__c msg = [
+            SELECT Id, SmartMsg__Message_Body__c, SmartMsg__Message_Type__c, SmartMsg__File_Name__c,
+                SmartMsg__Media_File__c, SmartMsg__Media_ID__c, SmartMsg__Image_ID__c, SmartMsg__Image_type__c,
+                SmartMsg__Image_SHA256__c, SmartMsg__Media_Url__c, SmartMsg__Channel__c
+            FROM SmartMsg__Message__c
+            WHERE SmartMsg__Message_Id__c = 'SMTestMediaInbound01'
+            LIMIT 1
+        ];
+        System.assertEquals('Photo caption', msg.SmartMsg__Message_Body__c, 'Caption should be stored');
+        System.assertEquals('image', msg.SmartMsg__Message_Type__c, 'Message type should be image');
+        System.assertEquals(true, msg.SmartMsg__Media_File__c, 'Media_File__c should be true');
+        System.assertEquals('ME123', msg.SmartMsg__Media_ID__c, 'Media ID should match Twilio MediaSid0');
+        System.assertEquals('ME123', msg.SmartMsg__Image_ID__c, 'Image_ID__c should match Meta-style storage');
+        System.assertEquals('image/jpeg', msg.SmartMsg__Image_type__c, 'Image_type__c should store MIME type');
+        System.assertEquals(null, msg.SmartMsg__Image_SHA256__c, 'Twilio webhook does not provide SHA256');
+        System.assert(msg.SmartMsg__File_Name__c != null && msg.SmartMsg__File_Name__c.startsWith('wa_image_'), 'File name should follow Meta wa_image_ pattern');
+        System.assertNotEquals(null, msg.SmartMsg__Media_Url__c, 'Media should be stored as ContentDocument after download');
+        System.assertEquals('Twilio WhatsApp', msg.SmartMsg__Channel__c, 'Channel should be Twilio WhatsApp');
+        System.assertEquals(200, res.statusCode, 'Webhook should return 200');
+    }
+
+    private class TwilioInboundMediaMock implements HttpCalloutMock {
+        public HttpResponse respond(HttpRequest req) {
+            HttpResponse res = new HttpResponse();
+            String endpoint = req.getEndpoint() != null ? req.getEndpoint() : '';
+            if (endpoint.contains('Twilio_API') || endpoint.contains('api.twilio.com')) {
+                res.setStatusCode(307);
+                res.setHeader('Location', 'https://media.twiliocdn.com/test-image.jpg');
+                return res;
+            }
+            res.setStatusCode(200);
+            res.setHeader('Content-Type', 'image/jpeg');
+            res.setBodyAsBlob(Blob.valueOf('fake-image-bytes'));
+            return res;
+        }
+    }
+
     /**
      * @description Test method to verify handling of incoming message with MessageStatus.
      */

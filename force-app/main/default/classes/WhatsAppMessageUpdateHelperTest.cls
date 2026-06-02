@@ -41,7 +41,7 @@ public class WhatsAppMessageUpdateHelperTest {
         insert dialog2;
 
         SmartMsg__Dialogue__c dialog3 = new SmartMsg__Dialogue__c();
-        dialog3.SmartMsg__Question__c = 'Dutch';
+        dialog3.SmartMsg__Question__c = 'Nederlands';
         dialog3.SmartMsg__Parent_Template__c = bot.Id;
         dialog3.SmartMsg__Response__c = 'How Can I help you.Choose the options';
         dialog3.SmartMsg__Type__c = 'option';

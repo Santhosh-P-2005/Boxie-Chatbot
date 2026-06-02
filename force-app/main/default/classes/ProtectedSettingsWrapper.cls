@@ -43,4 +43,7 @@ public class ProtectedSettingsWrapper {
     @AuraEnabled
     public String fromPhoneNumbers;
 
+    @AuraEnabled
+    public String agent;
+
 }

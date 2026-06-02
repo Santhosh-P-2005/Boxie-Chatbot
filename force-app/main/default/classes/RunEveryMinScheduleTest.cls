@@ -36,15 +36,64 @@ public class RunEveryMinScheduleTest {
     }*/
     @isTest
     public static void testRescheduleJob() {
+        ContentVersion cv = new ContentVersion(
+            Title = 'Inbound Media',
+            PathOnClient = 'test.pdf',
+            VersionData = Blob.valueOf('test-bytes'),
+            ContentLocation = 'S'
+        );
+        insert cv;
+        cv = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv.Id LIMIT 1];
+
+        SmartMsg__Message__c mediaMsg = new SmartMsg__Message__c(
+            SmartMsg__Delivery_Status__c = 'Received',
+            SmartMsg__To_Number__c = '+919876543210',
+            SmartMsg__Outgoing__c = false,
+            SmartMsg__Message_Body__c = 'Inbound media message',
+            SmartMsg__Channel__c = 'WhatsApp',
+            SmartMsg__Media_File__c = true,
+            SmartMsg__Media_Url__c = cv.ContentDocumentId
+        );
+        insert mediaMsg;
+
+        SmartMsg__Message__c linkedMediaMsg = new SmartMsg__Message__c(
+            SmartMsg__Delivery_Status__c = 'Received',
+            SmartMsg__To_Number__c = '+919876543211',
+            SmartMsg__Outgoing__c = false,
+            SmartMsg__Message_Body__c = 'Already linked media message',
+            SmartMsg__Channel__c = 'WhatsApp',
+            SmartMsg__Media_File__c = true,
+            SmartMsg__Media_Url__c = cv.ContentDocumentId
+        );
+        insert linkedMediaMsg;
+        insert new ContentDocumentLink(
+            LinkedEntityId = linkedMediaMsg.Id,
+            ContentDocumentId = cv.ContentDocumentId,
+            ShareType = 'V'
+        );
+
         Test.startTest();
-        RunEveryMinSchedule.RescheduleJob();
+        RunEveryMinSchedule.updateMessageRecordForInboundMedia();
+        RunEveryMinSchedule.rescheduleJob();
         Test.stopTest();
-        List<CronTrigger> cronTriggers = [SELECT Id, CronExpression, State FROM CronTrigger WHERE CronJobDetail.Name LIKE '%RunEveryMinSchedule%'];
-        Assert.areEqual(1, cronTriggers.size(), 'Job should be scheduled');
-        Assert.areEqual('WAITING', cronTriggers[0].State, 'Job state should be WAITING');
+
+        List<ContentDocumentLink> createdLinks = [
+            SELECT Id
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId = :mediaMsg.Id
+        ];
+        System.assertEquals(1, createdLinks.size(), 'ContentDocumentLink should be created for unlinked media message');
+
+        List<CronTrigger> cronTriggers = [
+            SELECT Id, CronExpression, State
+            FROM CronTrigger
+            WHERE CronJobDetail.Name LIKE '%RunEveryMinSchedule%'
+        ];
+        System.assertEquals(1, cronTriggers.size(), 'Job should be scheduled');
+        System.assertEquals('WAITING', cronTriggers[0].State, 'Job state should be WAITING');
         DateTime newDateTime = DateTime.now().addMinutes(1);
         String expectedCronExpression = '0 ' + String.valueOf(newDateTime.minute()) + ' * * * ? ';
         String actualCronExpression = cronTriggers[0].CronExpression.trim();
-        Assert.areEqual(expectedCronExpression.trim(), actualCronExpression, 'Cron expression should match the expected pattern');
+        System.assertEquals(expectedCronExpression.trim(), actualCronExpression, 'Cron expression should match the expected pattern');
     }
 }

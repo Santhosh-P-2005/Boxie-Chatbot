@@ -25,6 +25,7 @@ import listWAMessages from '@salesforce/apex/ChatComponentController.listWAMessa
 import sendTextMessage from '@salesforce/apex/ChatComponentController.sendTextMessage';
 import sendTemplateMessage from '@salesforce/apex/ChatComponentController.sendTemplateMessage';
 import sendMediaMessage from '@salesforce/apex/WhatsAppServices.sendMediaMessage';
+import sendMediaMessageWithFrom from '@salesforce/apex/ChatComponentController.sendMediaMessageWithFrom';
 //import sendTypingIndicator from '@salesforce/apex/WhatsAppServices.sendTypingIndicator';
 //import sendLocationRequestMessage from '@salesforce/apex/WhatsAppServices.sendLocationRequestMessage';
 import getPhoneFields from '@salesforce/apex/ChatComponentController.getPhoneFields';
@@ -202,6 +203,8 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 	@api phoneNumber;
 	@api objectApiName;
 	phoneFieldOptions = [];
+	casePhoneFields = {};
+	casePhoneSource = '';
 	@track searchQuery = '';
 	@track lastHighlightedMessageId = null;
 	@track selectedPhoneField;
@@ -330,8 +333,14 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 	get smsOptionBorderClass() {
 		return this.whatsAppOption ? 'dropdown-option dropdown-option-border' : 'dropdown-option';
 	}
-	get showScheduleAndAttachment() {
+	get showScheduleOption() {
 		return !(this.selectedOption === 'WhatsApp' && this.activeWhatsAppChannel === 'Twilio WhatsApp');
+	}
+	get showAttachmentOption() {
+		return true;
+	}
+	get showScheduleAndAttachment() {
+		return this.showScheduleOption;
 	}
 	get showTwilioFromNumberDropdown() {
 		return this.selectedOption === 'WhatsApp' && this.activeWhatsAppChannel === 'Twilio WhatsApp' && this.twilioFromNumberOptions && this.twilioFromNumberOptions.length > 0;
@@ -562,7 +571,7 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 		}
 	}
 	resolveObjectAndFetchRecord() {
-		const supportedObjects = ['Account', 'Contact', 'Opportunity', 'Lead'];
+		const supportedObjects = ['Account', 'Contact', 'Opportunity', 'Lead', 'Case'];
 		if (this.objectApiName && supportedObjects.includes(this.objectApiName)) {
 			this.fetchPhoneFields();
 			return;
@@ -594,6 +603,11 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 			});
 	}
 	fetchPhoneFields() {
+		// Case: phone comes from Description or linked Contact (not Case phone fields)
+		if (this.objectApiName === 'Case') {
+			this.retrieveRecordDetails();
+			return;
+		}
 		getPhoneFields({
 			objectName: this.objectApiName
 		})
@@ -628,6 +642,20 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 		this.filteredMessages = [];
 		this.phoneNumber = '';
 		this.formattedPhoneNumber = '';
+		if (this.objectApiName === 'Case' && this.casePhoneFields) {
+			const selected = this.casePhoneFields[this.selectedPhoneField];
+			if (selected) {
+				this.phoneNumber = selected;
+				this.formattedPhoneNumber = selected.startsWith('+') ? selected : '+' + selected;
+				this.validationMessage = '';
+			} else {
+				this.validationMessage = `No ${this.selectedPhoneField} available`;
+			}
+			this.loadMessages();
+			this.isSpinner = false;
+			this.isLoading = false;
+			return;
+		}
 		getRecordDetails({
 			objectName: this.objectApiName,
 			recordId: this.recordId,
@@ -906,18 +934,10 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 								Incoming: response.SmartMsg__Type__c === 'Inbound' && response.SmartMsg__Delivery_Status__c === 'Received',
 								formattedTime: this.formatTime(response.SmartMsg__Sent_Date_and_Time__c),
 								isSMS: response.SmartMsg__Channel__c === 'SMS',
-								isWhatsApp: response.SmartMsg__Channel__c === 'WhatsApp',
+								isWhatsApp: this.isWhatsAppChannel(response.SmartMsg__Channel__c),
 								sent: response.SmartMsg__Delivery_Status__c === 'Sent',
 								delivered: response.SmartMsg__Delivery_Status__c === 'Delivered',
-								isImage: response.SmartMsg__File_Name__c &&
-									(response.SmartMsg__File_Name__c.toLowerCase().endsWith('.jpeg') ||
-										response.SmartMsg__File_Name__c.toLowerCase().endsWith('.jpg') ||
-										response.SmartMsg__File_Name__c.toLowerCase().endsWith('.png') ||
-										response.SmartMsg__File_Name__c.endsWith('.webp')),
-								isPdf: response.SmartMsg__File_Name__c && response.SmartMsg__File_Name__c.endsWith('.pdf'),
-								isVideo: response.SmartMsg__File_Name__c && (response.SmartMsg__File_Name__c.endsWith('.mp4') || response.SmartMsg__File_Name__c.endsWith('.mov')),
-								isAudio: response.SmartMsg__File_Name__c && (response.SmartMsg__File_Name__c.endsWith('.mp3') || response.SmartMsg__File_Name__c.endsWith('.wav') || response.SmartMsg__File_Name__c.endsWith('.aac')),
-								imageUrl: response.SmartMsg__Media_Url__c ? `/sfc/servlet.shepherd/document/download/${response.SmartMsg__Media_Url__c}` : null,
+								...this.getMediaDisplayFlags(response),
 								isLocation: response.SmartMsg__Location_Latitude__c && response.SmartMsg__Location_Longitude__c,
 								locationName: response.SmartMsg__Location_Name__c || 'Shared a location',
 								locationAddress: response.SmartMsg__Location_Address__c || '',
@@ -1127,6 +1147,53 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 					this.loadMessages();
 					return;
 				}
+				if (this.objectApiName === 'Case' && result.PhoneFields) {
+					this.selectedContactId = result.ContactId || this.recordId;
+					this.selectedContact = {
+						Id: result.ContactId || this.recordId,
+						Name: result.Name,
+						Type: 'Case',
+						iconName: 'standard:case'
+					};
+					this.contactName = result.Name;
+					this.casePhoneFields = result.PhoneFields || {};
+					this.casePhoneSource = result.PhoneSource || '';
+
+					const caseContactPhoneFields = [
+						{ apiName: 'Phone', label: 'Phone' },
+						{ apiName: 'MobilePhone', label: 'Mobile Phone' }
+					];
+					const isDescriptionPhone = this.casePhoneSource === 'Description';
+
+					if (!isDescriptionPhone) {
+						// Contact fallback: Phone and MobilePhone only
+						this.phoneFieldOptions = caseContactPhoneFields
+							.filter((f) => result.PhoneFields[f.apiName])
+							.map((f) => ({
+								label: `${f.label} (${result.PhoneFields[f.apiName]})`,
+								value: f.apiName
+							}));
+						this.selectedPhoneField = this.phoneFieldOptions[0]?.value || '';
+						this.phoneNumber = this.selectedPhoneField
+							? (result.PhoneFields[this.selectedPhoneField] || '')
+							: (result.Phone || '');
+					} else {
+						// Description phone: single value
+						this.phoneNumber = result.Phone || result.PhoneFields.Phone || '';
+						this.selectedPhoneField = 'Phone';
+						this.phoneFieldOptions = [{
+							label: this.phoneNumber ? `Phone (${this.phoneNumber})` : 'Phone',
+							value: 'Phone'
+						}];
+					}
+					this.formattedPhoneNumber = this.phoneNumber
+						? (this.phoneNumber.startsWith('+') ? this.phoneNumber : '+' + this.phoneNumber)
+						: '';
+					this.validationMessage = this.phoneNumber ? '' : 'No valid phone number found in Case description or linked Contact.';
+
+					this.loadMessages();
+					return;
+				}
 			})
 			.catch(error => {
 				console.error('Error fetching record details:', error);
@@ -1138,6 +1205,9 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 		if (this.objectApiName === 'Opportunity') return 'Account'; // Or 'Contact' as per your logic
 		if (this.objectApiName === 'Lead') return 'Lead';
 		return 'Contact';
+	}
+	get isCaseRecord() {
+		return this.objectApiName === 'Case';
 	}
 	populatePhoneFieldOptions() {
 		if (this.objectInfo.data) {
@@ -1165,9 +1235,11 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 
 	createOrCheckSmartMsgRecord() {
 		if (!this.formattedPhoneNumber || this.selectedOption !== 'WhatsApp') return;
+		console.log('Record Id : '+this.recordId);
 		ensureChatbotMessage({ phoneNumber: this.formattedPhoneNumber })
 			.then(result => {
 				if (result) {
+					console.log('createOrCheckSmartMsgRecord ');
 					this.isAutoReplyEnabled = result.chatBotActive === 'true';
 					this.isAutoReplyEnabledId = result.recordId;
 				}
@@ -1215,7 +1287,7 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 			phoneNumber: this.formattedPhoneNumber
 		});
 		const whatsappPromise = listWAMessages({
-			customerPhone: this.phoneNumber
+			customerPhone: this.formattedPhoneNumber || this.phoneNumber
 		});
 		Promise.all([smsPromise, whatsappPromise])
 			.then(([smsResult, whatsappResult]) => {
@@ -1238,7 +1310,7 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 					pinLabel: msg.SmartMsg__Pinned__c ? 'Unpin Message' : 'Pin Message'
 
 				}));
-				this.refreshMessagesForSelectedChannel();
+				
 				this.setDefaultFromNumberFromInboundMessages(combinedMessages);
 				this.refreshMessagesForSelectedChannel();
 				this.shouldScrollToBottom = true;
@@ -1583,17 +1655,7 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 				isFailed: message.SmartMsg__Delivery_Status__c == 'Failed' ? true : false,
 				formattedTime: this.formatTime(message.SmartMsg__Sent_Date_and_Time__c ? message.SmartMsg__Sent_Date_and_Time__c : message.CreatedDate),
 				senderName: message.CreatedBy ? message.CreatedBy.Name : 'Unknown User',
-				// Setting the isImage flag and image URL based on the Media_Url__c and File_Content__c fields 
-				isImage: message.SmartMsg__File_Name__c &&
-					(message.SmartMsg__File_Name__c.toLowerCase().endsWith('.jpeg') ||
-						message.SmartMsg__File_Name__c.toLowerCase().endsWith('.jpg') ||
-						message.SmartMsg__File_Name__c.toLowerCase().endsWith('.png') ||
-						message.SmartMsg__File_Name__c.endsWith('.webp')),
-				isMedia: message.SmartMsg__Media_Url__c ? true : false,
-				isPdf: message.SmartMsg__File_Name__c && message.SmartMsg__File_Name__c.endsWith('.pdf'),
-				isVideo: message.SmartMsg__File_Name__c && (message.SmartMsg__File_Name__c.endsWith('.mp4') || message.SmartMsg__File_Name__c.endsWith('.mov')),
-				isAudio: message.SmartMsg__File_Name__c && (message.SmartMsg__File_Name__c.endsWith('.mp3') || message.SmartMsg__File_Name__c.endsWith('.wav') || message.SmartMsg__File_Name__c.endsWith('.aac')),
-				imageUrl: message.SmartMsg__Media_Url__c ? `/sfc/servlet.shepherd/document/download/${message.SmartMsg__Media_Url__c}` : null,
+				...this.getMediaDisplayFlags(message),
 				pinIconVariant: this.pinnedMessageId === message.Id ? 'brand' : 'border-filled',
 				starIconName: this.starredMessageIds.includes(message.Id) ? 'utility:favorite' : 'utility:favorite',
 				starIconVariant: this.starredMessageIds.includes(message.Id) ? 'brand' : 'border-filled',
@@ -1645,6 +1707,63 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 		// Format and return the time 
 		return new Intl.DateTimeFormat('en-US', options).format(utcDate);
 	}
+	isWhatsAppChannel(channel) {
+		return channel === 'WhatsApp' || channel === 'Twilio WhatsApp';
+	}
+	getMediaDisplayFlags(message) {
+		const fileName = (message.SmartMsg__File_Name__c || '').toLowerCase();
+		const msgType = (message.SmartMsg__Message_Type__c || '').toLowerCase();
+		const mimeType = (
+			message.SmartMsg__Image_type__c ||
+			message.SmartMsg__Video_Type__c ||
+			message.SmartMsg__Document_Type__c ||
+			''
+		).toLowerCase();
+		const mediaUrl = message.SmartMsg__Media_Url__c;
+		const isSalesforceFile = mediaUrl && !String(mediaUrl).toLowerCase().startsWith('http');
+
+		const isAudio =
+			msgType === 'audio' ||
+			/\.(mp3|wav|aac|ogg|opus|amr|m4a|mpeg|webm)$/.test(fileName) ||
+			mimeType.startsWith('audio/');
+
+		const isImage =
+			!isAudio &&
+			(msgType === 'image' ||
+				/\.(jpe?g|png|gif|webp|heic)$/.test(fileName) ||
+				mimeType.startsWith('image/'));
+
+		const isVideo =
+			!isAudio &&
+			(msgType === 'video' ||
+				/\.(mp4|mov|mpeg4)$/.test(fileName) ||
+				mimeType.startsWith('video/'));
+
+		const isPdf =
+			!isAudio &&
+			!isImage &&
+			!isVideo &&
+			(fileName.endsWith('.pdf') || mimeType.includes('pdf') || msgType === 'document');
+
+		let imageUrl = null;
+		if (mediaUrl) {
+			if (isSalesforceFile) {
+				imageUrl = `/sfc/servlet.shepherd/document/download/${mediaUrl}`;
+			} else if (String(mediaUrl).toLowerCase().startsWith('http')) {
+				imageUrl = mediaUrl;
+			}
+		}
+
+		return {
+			isMedia: !!mediaUrl,
+			isImage,
+			isAudio,
+			isVideo,
+			isPdf,
+			imageUrl,
+			imageUrlIsSalesforce: !!isSalesforceFile
+		};
+	}
 	formatWhatsAppMessages(messages) {
 		const messageIdMap = {};
 		messages.forEach(msg => {
@@ -1656,7 +1775,6 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 		return messages.map(message => {
 			const WAScheduledTime = message.SmartMsg__Delivery_Status__c === 'Scheduled' ? this.formatScheduledTime(message.SmartMsg__Scheduled_Date_Time__c) : '';
 			//console.log('WAScheduledTime ---> ', WAScheduledTime);
-			const isSalesforceFile = message.SmartMsg__Media_Url__c && !message.SmartMsg__Media_Url__c.startsWith('http');
 			const parentMessageId = message.SmartMsg__Parent_Message_Id__c?.trim();
 			const parentMessage = parentMessageId ? messageIdMap[parentMessageId] : null;
 			const formattedMessage = {
@@ -1668,21 +1786,10 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 				delivered: message.SmartMsg__Delivery_Status__c == 'Delivered' ? true : false,
 				read: message.SmartMsg__Delivery_Status__c == 'Read' ? true : false,
 				isSMS: message.SmartMsg__Channel__c === 'SMS' ? true : false,
-				isWhatsApp: message.SmartMsg__Channel__c === 'WhatsApp' || message.SmartMsg__Channel__c === 'Twilio WhatsApp' ? true : false,
+				isWhatsApp: this.isWhatsAppChannel(message.SmartMsg__Channel__c),
 				formattedTime: this.formatTime(message.CreatedDate),
 				WAScheduledTime: WAScheduledTime,
-				isImage: message.SmartMsg__File_Name__c &&
-					(message.SmartMsg__File_Name__c.toLowerCase().endsWith('.jpeg') ||
-						message.SmartMsg__File_Name__c.toLowerCase().endsWith('.jpg') ||
-						message.SmartMsg__File_Name__c.toLowerCase().endsWith('.png') ||
-						message.SmartMsg__File_Name__c.endsWith('.webp')),
-				isPdf: message.SmartMsg__File_Name__c && message.SmartMsg__File_Name__c.endsWith('.pdf'),
-				isVideo: message.SmartMsg__File_Name__c && (message.SmartMsg__File_Name__c.endsWith('.mp4') || message.SmartMsg__File_Name__c.endsWith('.mov')),
-				isAudio: message.SmartMsg__File_Name__c && (message.SmartMsg__File_Name__c.endsWith('.mp3') || message.SmartMsg__File_Name__c.endsWith('.wav') || message.SmartMsg__File_Name__c.endsWith('.aac')),
-				isMedia: message.SmartMsg__Media_Url__c ? true : false,
-				imageUrlIsSalesforce: isSalesforceFile,
-				imageUrl: isSalesforceFile ? `/sfc/servlet.shepherd/document/download/${message.SmartMsg__Media_Url__c}` : null,
-				//imageUrl: message.SmartMsg__Media_Url__c?.startsWith('http') ? message.SmartMsg__Media_Url__c : `/sfc/servlet.shepherd/document/download/${message.SmartMsg__Media_Url__c}`,
+				...this.getMediaDisplayFlags(message),
 				isLocation: message.SmartMsg__Location_Latitude__c && message.SmartMsg__Location_Longitude__c ? true : false,
 				locationName: message.SmartMsg__Location_Name__c || 'Shared a location',
 				locationAddress: message.SmartMsg__Location_Address__c || '',
@@ -2280,6 +2387,25 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 		const text = (this.messageText || '').trim();
 		return this.isAutoReplyEnabled === true || text === '';
 	}
+
+	// LWC template bindings do not support inline ternaries inside attributes.
+	// This getter centralizes the footer class for "chatbot ON => disable UI".
+	get chatFooterClass() {
+		return this.isAutoReplyEnabled
+			? 'slds-card__footer footer-area margin-zero chatbot-ui-disabled'
+			: 'slds-card__footer footer-area margin-zero';
+	}
+
+	// When a template is selected, lock the message textbox content.
+	get isTemplateContentLocked() {
+		return !!this.selectedTemplateId;
+	}
+
+	// LWC templates don't support expressions in attributes like:
+	// disabled={a || b}. Use a computed getter instead.
+	get isMessageInputDisabled() {
+		return this.isAutoReplyEnabled === true || this.isTemplateContentLocked === true;
+	}
 	handleSendMessage() {
 		if (!this.isEnterKeyPressed) {
 			this.isEnterKeyPressed = true;
@@ -2435,6 +2561,61 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 			});
 		}
 	}
+	getWhatsAppChannelForCreate() {
+		return this.activeWhatsAppChannel === 'Twilio WhatsApp' ? 'Twilio WhatsApp' : 'WhatsApp';
+	}
+	invokeSendMediaMessage({ messageRecordId, mediaUrl, fileName, caption }) {
+		const params = {
+			messageRecordId,
+			mediaType: this.selectedMediaType,
+			mediaUrl,
+			toPhone: this.phoneNumber,
+			caption,
+			fileName
+		};
+		if (this.activeWhatsAppChannel === 'Twilio WhatsApp') {
+			return sendMediaMessageWithFrom({
+				...params,
+				fromNumber: this.selectedTwilioFromNumber || null
+			});
+		}
+		return sendMediaMessage(params);
+	}
+	buildOutgoingMediaMessage(updatedResult) {
+		const isSalesforceFile = updatedResult.SmartMsg__Media_Url__c && !updatedResult.SmartMsg__Media_Url__c.startsWith('http');
+		return {
+			...updatedResult,
+			Outgoing: true,
+			Incoming: false,
+			Scheduled: false,
+			sent: updatedResult.SmartMsg__Delivery_Status__c === 'Sent',
+			delivered: updatedResult.SmartMsg__Delivery_Status__c === 'Delivered',
+			read: updatedResult.SmartMsg__Delivery_Status__c === 'Read',
+			isSMS: false,
+			isWhatsApp: true,
+			isImage: updatedResult.SmartMsg__File_Name__c && (
+				updatedResult.SmartMsg__File_Name__c.endsWith('.jpeg') ||
+				updatedResult.SmartMsg__File_Name__c.endsWith('.jpg') ||
+				updatedResult.SmartMsg__File_Name__c.endsWith('.png')
+			),
+			isPdf: updatedResult.SmartMsg__File_Name__c && updatedResult.SmartMsg__File_Name__c.endsWith('.pdf'),
+			isVideo: updatedResult.SmartMsg__File_Name__c && (
+				updatedResult.SmartMsg__File_Name__c.endsWith('.mp4') ||
+				updatedResult.SmartMsg__File_Name__c.endsWith('.mov')
+			),
+			isAudio: updatedResult.SmartMsg__File_Name__c && (
+				updatedResult.SmartMsg__File_Name__c.endsWith('.mp3') ||
+				updatedResult.SmartMsg__File_Name__c.endsWith('.wav') ||
+				updatedResult.SmartMsg__File_Name__c.endsWith('.aac')
+			),
+			isMedia: !!updatedResult.SmartMsg__Media_Url__c,
+			imageUrlIsSalesforce: isSalesforceFile,
+			imageUrl: isSalesforceFile
+				? `/sfc/servlet.shepherd/document/download/${updatedResult.SmartMsg__Media_Url__c}`
+				: null,
+			formattedTime: this.formatTime(updatedResult.CreatedDate)
+		};
+	}
 	sendWhatsAppMessage() {
 		let allValid = this.handleValidate();
 		if (allValid && this.selectedOption == 'WhatsApp') {
@@ -2508,7 +2689,7 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 					templateId: null,
 					relatedRecordId: this.recordId,
 					relatedObjectId: this.recordId,
-					channel: 'WhatsApp',
+					channel: this.getWhatsAppChannelForCreate(),
 					publicMediaUrl: null,
 					publicFileName: null
 				})
@@ -2519,36 +2700,13 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 						});
 					})
 					.then(publicUrl => {
-						// Step 3: Send WhatsApp media message and update the same record
-						return sendMediaMessage({
+						return this.invokeSendMediaMessage({
 							messageRecordId: messageResult.Id,
-							mediaType: this.selectedMediaType,
 							mediaUrl: publicUrl,
-							toPhone: this.phoneNumber,
-							caption: this.messageText,
-							fileName: messageResult.SmartMsg__File_Name__c
+							fileName: messageResult.SmartMsg__File_Name__c,
+							caption: this.messageText
 						}).then(updatedResult => {
-							// Step 4: Update UI with the updated message
-							const isSalesforceFile = updatedResult.SmartMsg__Media_Url__c && !updatedResult.SmartMsg__Media_Url__c.startsWith('http');
-							const newMessage = {
-								...updatedResult,
-								Outgoing: true,
-								Incoming: false,
-								Scheduled: false,
-								sent: updatedResult.SmartMsg__Delivery_Status__c === 'Sent',
-								delivered: updatedResult.SmartMsg__Delivery_Status__c === 'Delivered',
-								read: updatedResult.SmartMsg__Delivery_Status__c === 'Read',
-								isSMS: false,
-								isWhatsApp: true,
-								isImage: updatedResult.SmartMsg__File_Name__c && (updatedResult.SmartMsg__File_Name__c.endsWith('.jpeg') || updatedResult.SmartMsg__File_Name__c.endsWith('.jpg') || updatedResult.SmartMsg__File_Name__c.endsWith('.png')),
-								isPdf: updatedResult.SmartMsg__File_Name__c && updatedResult.SmartMsg__File_Name__c.endsWith('.pdf'),
-								isVideo: updatedResult.SmartMsg__File_Name__c && (updatedResult.SmartMsg__File_Name__c.endsWith('.mp4') || updatedResult.SmartMsg__File_Name__c.endsWith('.mov')),
-								isAudio: updatedResult.SmartMsg__File_Name__c && (updatedResult.SmartMsg__File_Name__c.endsWith('.mp3') || updatedResult.SmartMsg__File_Name__c.endsWith('.wav') || updatedResult.SmartMsg__File_Name__c.endsWith('.aac')),
-								//imageUrl: updatedResult.SmartMsg__Media_Url__c ? `/sfc/servlet.shepherd/document/download/${updatedResult.SmartMsg__Media_Url__c}` : null,
-								imageUrlIsSalesforce: isSalesforceFile,
-								imageUrl: isSalesforceFile ? `/sfc/servlet.shepherd/document/download/${updatedResult.SmartMsg__Media_Url__c}` : null,
-								formattedTime: this.formatTime(updatedResult.CreatedDate)
-							};
+							const newMessage = this.buildOutgoingMediaMessage(updatedResult);
 							this.messages = [...this.messages, newMessage];
 							this.allMessages = [...(this.allMessages || []), newMessage];
 							this.groupMessagesByDate();
@@ -2587,40 +2745,18 @@ export default class ChatComponent extends NavigationMixin(LightningElement) {
 					templateId: null,
 					relatedRecordId: this.recordId,
 					relatedObjectId: this.recordId,
-					channel: 'WhatsApp',
+					channel: this.getWhatsAppChannelForCreate(),
 					publicMediaUrl: this.mediaUrl,
 					publicFileName: this.extractFileNameFromUrl(this.mediaUrl)
 				})
 					.then(result => {
-						return sendMediaMessage({
+						return this.invokeSendMediaMessage({
 							messageRecordId: result.Id,
-							mediaType: this.selectedMediaType,
 							mediaUrl: this.mediaUrl,
-							toPhone: this.phoneNumber,
-							caption: this.messageText,
-							fileName: this.extractFileNameFromUrl(this.mediaUrl)
+							fileName: this.extractFileNameFromUrl(this.mediaUrl),
+							caption: this.messageText
 						}).then(updatedResult => {
-							// Step 4: Update UI with the updated message
-							const isSalesforceFile = updatedResult.SmartMsg__Media_Url__c && !updatedResult.SmartMsg__Media_Url__c.startsWith('http');
-							const newMessage = {
-								...updatedResult,
-								Outgoing: true,
-								Incoming: false,
-								Scheduled: false,
-								sent: updatedResult.SmartMsg__Delivery_Status__c === 'Sent',
-								delivered: updatedResult.SmartMsg__Delivery_Status__c === 'Delivered',
-								read: updatedResult.SmartMsg__Delivery_Status__c === 'Read',
-								isSMS: false,
-								isWhatsApp: true,
-								isImage: updatedResult.SmartMsg__File_Name__c && (updatedResult.SmartMsg__File_Name__c.endsWith('.jpeg') || updatedResult.SmartMsg__File_Name__c.endsWith('.jpg') || updatedResult.SmartMsg__File_Name__c.endsWith('.png')),
-								isPdf: updatedResult.SmartMsg__File_Name__c && updatedResult.SmartMsg__File_Name__c.endsWith('.pdf'),
-								isVideo: updatedResult.SmartMsg__File_Name__c && (updatedResult.SmartMsg__File_Name__c.endsWith('.mp4') || updatedResult.SmartMsg__File_Name__c.endsWith('.mov')),
-								isAudio: updatedResult.SmartMsg__File_Name__c && (updatedResult.SmartMsg__File_Name__c.endsWith('.mp3') || updatedResult.SmartMsg__File_Name__c.endsWith('.wav') || updatedResult.SmartMsg__File_Name__c.endsWith('.aac')),
-								//imageUrl: updatedResult.SmartMsg__Media_Url__c ? `/sfc/servlet.shepherd/document/download/${updatedResult.SmartMsg__Media_Url__c}` : null,
-								imageUrlIsSalesforce: isSalesforceFile,
-								imageUrl: isSalesforceFile ? `/sfc/servlet.shepherd/document/download/${updatedResult.SmartMsg__Media_Url__c}` : null,
-								formattedTime: this.formatTime(updatedResult.CreatedDate)
-							};
+							const newMessage = this.buildOutgoingMediaMessage(updatedResult);
 							this.messages = [...this.messages, newMessage];
 							this.allMessages = [...(this.allMessages || []), newMessage];
 							this.groupMessagesByDate();

@@ -2,7 +2,7 @@
 * @description A class for sending and managing WhatsApp messages using the Facebook Graph API.
 * This class includes methods to send text messages, send template messages, and construct payloads for template messages.
 */
-public with sharing class WhatsAppServices {
+public without sharing class WhatsAppServices {
     public static  String messagingProduct = 'messaging_product';
     public Contacts[] contacts;
     public Messages[] messages;
@@ -36,29 +36,34 @@ public with sharing class WhatsAppServices {
         httpReq.setHeader('Pragma', 'no-cache');
         httpReq.setHeader('Expires', '0');
         httpReq.setHeader('X-Content-Type-Options', 'nosniff');
-        String messageBody = '{'+
-            +messagingProduct+ ' : "whatsapp",'+
-            '    "recipient_type": "individual",'+
-            '    "to": "'+toPhone+'",'+
-            '    "type": "text",'+
-            '    "text": {'+
-            '        "preview_url": false,'+
-            '        "body": "' + messageContent.replace('\n', '\\n') + '"'+
-            '    }'+
-            '}';
-        httpReq.setBody(messageBody);
+        Map<String, Object> payload = new Map<String, Object>{
+            'messaging_product' => 'whatsapp',
+            'recipient_type' => 'individual',
+            'to' => toPhone,
+            'type' => 'text',
+            'text' => new Map<String, Object>{
+                'preview_url' => false,
+                'body' => messageContent.replace('\n', '\\n')
+            }
+        };
+        httpReq.setBody(JSON.serialize(payload));
         Http http = new Http();
         SmartMsg__Message__c salesforceMessage = new SmartMsg__Message__c();
         try{
             HttpResponse response = http.send(httpReq);
-            if( response.getStatusCode() == 200 ){
+            if( response.getStatusCode() == 200 || response.getStatusCode() == 201 ){
                 whatsAppServices responseFromWA = (whatsAppServices) JSON.deserialize( response.getBody() , whatsAppServices.class);
                 if (!Schema.sObjectType.SmartMsg__Message__c.isCreateable() && !Schema.sObjectType.SmartMsg__Message__c.isUpdateable()) {
                     throw new AuraHandledException('You do not have permission to create this message.');
                 } 
                 //salesforceMessage.SmartMsg__From_Number__c = fromNumber;
                 salesforceMessage.SmartMsg__Message_Body__c = messageContent;
-                salesforceMessage.SmartMsg__To_Number__c = '+'+toPhone;
+                if(toPhone.startsWith('+')){
+                    toPhone = toPhone;
+                }else{
+                    toPhone = '+'+toPhone;
+                }
+                salesforceMessage.SmartMsg__To_Number__c = toPhone;
                 salesforceMessage.SmartMsg__Message_ID__c = responseFromWA.messages.get(0).id;
                 salesforceMessage.SmartMsg__Message_Type__c = 'text';
                 salesforceMessage.SmartMsg__Type__c = 'Outbound';
@@ -70,7 +75,38 @@ public with sharing class WhatsAppServices {
                 if (!CommonUtil.hasFLS(salesforceMessage)) {
                     throw new AuraHandledException('You do not have the necessary field permissions to create Message_Template__c records.');
                 }
-                upsert salesforceMessage SmartMsg__Message_ID__c;
+                insert salesforceMessage;
+
+                // Increment outbound count on the active Messaging Session for this recipient.
+                // This covers outbounds sent via WhatsAppServices (e.g., Agentforce replies).
+                try {
+
+                    if (toPhone != null && toPhone != '') {
+                        List<SmartMsg__Messaging_Session__c> sessions = [
+                            SELECT Id, SmartMsg__No_of_Outbound_Messages__c
+                            FROM SmartMsg__Messaging_Session__c
+                            WHERE SmartMsg__Session_status__c != 'Completed'
+                            AND SmartMsg__To_Number__c = :toPhone
+                            WITH SECURITY_ENFORCED
+                            ORDER BY CreatedDate DESC
+                            LIMIT 1
+                        ];
+                        if (!sessions.isEmpty()) {
+                            SmartMsg__Messaging_Session__c ms = sessions[0];
+                            Integer currentOutbound = ms.SmartMsg__No_of_Outbound_Messages__c == null
+                                ? 0
+                                : Integer.valueOf(ms.SmartMsg__No_of_Outbound_Messages__c);
+                            ms.SmartMsg__No_of_Outbound_Messages__c = currentOutbound + 1;
+                            update ms;
+                        }
+                    }
+                } catch (Exception ignoreOutboundCount) {
+                    // Do not block message send if the counter update fails.
+                    // System.debug('Outbound count increment failed: ' + ignoreOutboundCount.getMessage());
+                }
+            }
+            else {
+                System.debug(LoggingLevel.ERROR, 'Meta WhatsApp sendTextMessage failed. Status=' + response.getStatusCode() + ' Body=' + response.getBody());
             }
         }catch(System.CalloutException ex){
             throw new AuraHandledException('CalloutException: ' + ex.getMessage());

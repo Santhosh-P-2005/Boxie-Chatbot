@@ -94,4 +94,41 @@ public class twilioWhatsAppServicesTest {
         System.assertEquals(messageSid, result.SmartMsg__Message_ID__c, 'Message ID should match');
         System.assertNotEquals(null, result.SmartMsg__Sent_Date_and_Time__c, 'Sent date and time should be set');
     }
+
+    /**
+     * @description Tests sendMediaMessage for an existing Message__c record via Twilio WhatsApp.
+     */
+    @isTest
+    static void testSendMediaMessage() {
+        SmartMsg__Twilio_Whatsapp__c twilioSetting = TestObjectFactory.twilioWhatsAppSettings();
+        upsert twilioSetting;
+
+        SmartMsg__Message__c existing = TestObjectFactory.createMessageRecords(1)[0];
+        existing.SmartMsg__To_Number__c = '+1234567890';
+        existing.SmartMsg__Message_Body__c = 'Media caption';
+        existing.SmartMsg__Type__c = 'Outbound';
+        existing.SmartMsg__Media_Url__c = '069XXXXXXXXXXXX';
+        existing.SmartMsg__File_Name__c = 'photo.jpg';
+        insert existing;
+
+        String toPhone = '+1234567890';
+        String fromPhone = '+1234567890';
+        String messageSid = 'SMTestMediaSID123';
+        String mockResponse = getTwilioMessageResponse(messageSid, toPhone, fromPhone, 'Media caption');
+        Test.setMock(HttpCalloutMock.class, new TwilioHttpMock(201, mockResponse));
+
+        Test.startTest();
+        SmartMsg__Message__c result = TwilioWhatsAppServices.sendMediaMessage(
+            existing.Id,
+            'https://example.com/photo.jpg',
+            toPhone,
+            'Media caption',
+            fromPhone
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, result, 'Updated message should be returned');
+        System.assertEquals('Sent', result.SmartMsg__Delivery_Status__c, 'Delivery status should be Sent');
+        System.assertEquals('photo.jpg', result.SmartMsg__File_Name__c, 'File name should remain on record');
+    }
 }

@@ -19,8 +19,6 @@
     <tabs>Messaging_Session__c</tabs>
     <tabs>Messenger_Bot__c</tabs>
     <tabs>Option_Dialog__c</tabs>
-    <tabs>Customer_Detail__c</tabs>
-    <tabs>Subscription_Detail__c</tabs>
     <uiType>Lightning</uiType>
     <utilityBar>UtilityBar</utilityBar>
 </CustomApplication>

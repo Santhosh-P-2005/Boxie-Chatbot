@@ -426,6 +426,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Messaging_Session__c.Agent_Session__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Messaging_Session__c.End_Time__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -452,6 +457,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Messaging_Session__c.To_Number__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Messaging_Session__c.Total_Duration__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

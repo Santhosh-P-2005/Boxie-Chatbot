@@ -2,6 +2,47 @@
  * @description TODO: method description
 */
 public with sharing class TestObjectFactory {
+    
+    /*public static void getAgentResponse(String inputMessage, String toNumber) {
+
+        String sessionId;
+        String agentResponse;
+        // Map<String, String> agentResult = new Map<String, String>();
+        try {
+            Invocable.Action action = Invocable.Action.createCustomAction(
+                'generateAiAgentResponse', 
+                'Copilot_for_Salesforce'
+            );
+            action.setInvocationParameter('userMessage', inputMessage);
+            if (String.isNotBlank(sessionId)) {
+                action.setInvocationParameter('sessionId', sessionId);
+            }
+            List<Invocable.Action.Result> results = action.invoke();
+            Invocable.Action.Result result = results[0];
+            System.debug('result -> ' + result);
+
+            if (result.isSuccess()) {
+                Map<String, Object> outputParams = result.getOutputParameters();
+                Object agentResponseObj = outputParams.get('agentResponse');
+                Map<String, Object> agentResponseMap;
+                if (agentResponseObj instanceof String) {
+                    agentResponseMap = (Map<String, Object>) JSON.deserializeUntyped((String)agentResponseObj);
+                } 
+                else {
+                    agentResponseMap = (Map<String, Object>) agentResponseObj;
+                }
+                agentResponse = (String) agentResponseMap.get('value');
+                sessionId = (String)outputParams.get('sessionId');
+                System.debug('sessionId -> ' + sessionId);
+                System.debug('agentResponse -> ' + agentResponse);
+
+                WhatsAppServices.sendTextMessage(agentResponse, toNumber);
+            }
+        } 
+        catch (Exception e) {
+            System.debug('Exception: ' + e.getMessage());
+        }
+    }*/
 	/**
      * @description create the test account records
      * @param num
@@ -179,7 +220,7 @@ public with sharing class TestObjectFactory {
             Database.insert(dialog2, AccessLevel.USER_MODE);
 
             SmartMsg__Dialogue__c dialog3 = new SmartMsg__Dialogue__c();
-            dialog3.SmartMsg__Question__c = 'Dutch';
+            dialog3.SmartMsg__Question__c = 'Nederlands';
             dialog3.SmartMsg__Parent_Template__c = bot.Id;
             dialog3.SmartMsg__Response__c = 'How Can I help you.Choose the options';
             dialog3.SmartMsg__Type__c = 'option';
@@ -253,7 +294,7 @@ public with sharing class TestObjectFactory {
             );
             Database.insert(dialog11, AccessLevel.USER_MODE);
             SmartMsg__Dialogue__c dialog12 = new SmartMsg__Dialogue__c(
-            SmartMsg__Question__c = 'No',
+            SmartMsg__Question__c = 'No, that\'s all.',
             SmartMsg__Response__c = 'Thank you for contacting us',
             SmartMsg__Parent_Template__c = bot.Id,
             SmartMsg__Type__c = 'Separate Text'

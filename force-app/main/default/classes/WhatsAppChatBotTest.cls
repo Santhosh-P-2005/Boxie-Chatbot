@@ -318,10 +318,10 @@ public class WhatsAppChatBotTest {
         List<SmartMsg__Option_Dialog__c> optionDialogList = TestObjectFactory.optionDialogRecords();
         insert optionDialogList;
         insert TestObjectFactory.metaConfigurations();
-        List<SmartMsg__Option_Dialog__c> noOption = [SELECT Id FROM SmartMsg__Option_Dialog__c WHERE SmartMsg__Inbound_Response__r.SmartMsg__Question__c = 'No' LIMIT 1];
+        List<SmartMsg__Option_Dialog__c> noOption = [SELECT Id FROM SmartMsg__Option_Dialog__c WHERE SmartMsg__Inbound_Response__r.SmartMsg__Question__c = 'No, that\'s all.' LIMIT 1];
         noOption[0].SmartMsg__Order_Number__c = 1;
         update noOption;
-        List<SmartMsg__Dialogue__c> dialog12List = [SELECT Id, SmartMsg__Parent_Template__c FROM SmartMsg__Dialogue__c WHERE SmartMsg__Question__c = 'No' LIMIT 1];
+        List<SmartMsg__Dialogue__c> dialog12List = [SELECT Id, SmartMsg__Parent_Template__c FROM SmartMsg__Dialogue__c WHERE SmartMsg__Question__c = 'No, that\'s all.' LIMIT 1];
         SmartMsg__Dialogue__c child = new SmartMsg__Dialogue__c(
             SmartMsg__Parent_Record__c = dialog12List[0].Id,
             SmartMsg__Response__c = 'Thank you for contacting us',
@@ -337,7 +337,7 @@ public class WhatsAppChatBotTest {
         res.setBody('{"messages":[{"id":"wamid.no"}]}');
         Test.setMock(HttpCalloutMock.class, new MockHttpResponseGenerator(res));
         Test.startTest();
-        WhatsAppChatBot.nextResponseRecordWhatsAppChatbot('19999', 'No', 'text');
+        WhatsAppChatBot.nextResponseRecordWhatsAppChatbot('19999', 'No, that\'s all.', 'text');
         Test.stopTest();
         System.assert(outboundMessagesContainExpectedResponse('19999', 'Thank you for contacting us'), 'Outbound should contain thank you message');
     }
@@ -360,7 +360,7 @@ public class WhatsAppChatBotTest {
         res.setBody('{"messages":[{"id":"wamid.test"}]}');
         Test.setMock(HttpCalloutMock.class, new MockHttpResponseGenerator(res));
         Test.startTest();
-        WhatsAppChatBot.nextResponseRecordWhatsAppChatbot('19998', 'No', 'button_reply');
+        WhatsAppChatBot.nextResponseRecordWhatsAppChatbot('19998', 'No, that\'s all.', 'button_reply');
         Test.stopTest();
         System.assertEquals(true, WhatsAppChatBot.sessionEndFlag, 'sessionEndFlag should be true after No button reply');
     }

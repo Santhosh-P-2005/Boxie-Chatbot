@@ -132,6 +132,10 @@ public class SendWhatsAppMessagesWithUpdatedJSON implements Queueable, Finalizer
                         if(dialogList[0].SmartMsg__Buttons_or_Options__c != null ){
                             quickReplyActionsList = (dialogList[0].SmartMsg__Buttons_or_Options__c).split('\n');
                         }
+                        integer i = 0;
+                        while(i<5000){
+                            i++;
+                        }
                         Map<String,Object> finalInteractionPayload = WhatsAppChatBot.dynamicJSON(messageBody,quickReplyActionsList,type,toPhone);
                         makeCallout(finalInteractionPayload, messageBody, toPhone, dialogList.get(0).Id,null);
                     }
